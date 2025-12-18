@@ -1,0 +1,17 @@
+{
+  "name": "wilderness",
+  "private": true,
+  "workspaces": [
+    "extension",
+    "shared",
+    "server"
+  ],
+  "scripts": {
+    "dev:extension": "bun --cwd extension dev",
+    "build:extension": "bun --cwd extension build",
+    "test": "bun --cwd extension test && bun --cwd server test && bun --cwd shared test"
+  },
+  "dependencies": {
+    "agent-rules": "github:madebywild/agent-rules#main"
+  }
+}

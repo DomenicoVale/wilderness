@@ -1,0 +1,8 @@
+{
+  "name": "@wilderness/shared",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "echo \"No tests configured yet\" && exit 0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@wilderness/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ./src/index.ts",
+    "test": "echo \"No tests configured yet\" && exit 0"
+  }
+}
