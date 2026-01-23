@@ -1,11 +1,7 @@
 import { createGuideBox } from "./guide_box.element";
 import { createGridlines } from "./gridlines.element";
-import {
-  getTargetRect,
-  isGuidesUiElement,
-  isOffBounds,
-  targetElementFromPoint,
-} from "./guides_utils";
+import { getDeepTargetFromPoint, isDeepPickEvent } from "../element_pick";
+import { getTargetRect, isGuidesUiElement, isOffBounds } from "./guides_utils";
 import { clearMeasurements, createMeasurements } from "./measurements";
 
 const GUIDES_STYLE_ID = "wilderness-guides-styles";
@@ -271,13 +267,10 @@ export const createGuidesController = () => {
       return;
     }
 
-    const preferDeepest =
-      (typeof event.altKey === "boolean" && event.altKey) ||
-      (typeof event.metaKey === "boolean" && event.metaKey);
-    const target = targetElementFromPoint(
+    const target = getDeepTargetFromPoint(
       event.clientX,
       event.clientY,
-      preferDeepest,
+      isDeepPickEvent(event),
     );
     if (isOffBounds(target)) {
       return;
@@ -311,11 +304,10 @@ export const createGuidesController = () => {
       return;
     }
 
-    const preferDeepest = event.altKey || event.metaKey;
-    const target = targetElementFromPoint(
+    const target = getDeepTargetFromPoint(
       event.clientX,
       event.clientY,
-      preferDeepest,
+      isDeepPickEvent(event),
     );
     if (isOffBounds(target)) {
       updateHover(null);

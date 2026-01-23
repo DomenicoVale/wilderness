@@ -19,5 +19,9 @@
 - Guides runs in the content script and renders overlays into the page DOM.
 - Overlays include selection boxes, hover gridlines, and distance measurements.
 
+## Info Tool
+- Info runs in the content script and renders inspection tips into the page DOM.
+- Tips show computed styles and can be pinned per element.
+
 ## Future Backend
 We plan to add an Express.js backend later and will migrate to a monorepo layout when that work begins. Until then, the extension remains a single-package repo.

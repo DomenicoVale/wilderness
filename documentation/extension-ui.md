@@ -23,4 +23,5 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - The Guides button toggles a ruler mode that measures elements and distances.
 - Guides mode shows a small settings bar for label visibility.
 - Guides blocks page mouse handlers while active.
+- The Info button toggles an inspector tooltip for styles.
 - Hovering an element in Guides mode shows full-edge dotted guides.

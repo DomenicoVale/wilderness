@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import { cn } from "../../lib/utils";
+import { getToolState, setToolState, subscribeToolState } from "./tool_state";
 
 const MENU_ITEMS = [
   { label: "Inspect styles", value: "inspect" },
@@ -20,28 +21,39 @@ const handleAlert = () => {
 };
 
 export function ContentToolbar() {
-  const [guidesEnabled, setGuidesEnabled] = React.useState(false);
+  const toolState = React.useSyncExternalStore(
+    subscribeToolState,
+    getToolState,
+  );
   const [guidesSettings, setGuidesSettings] = React.useState({
     alwaysShowDimensions: false,
   });
 
   const handleGuidesToggle = () => {
-    setGuidesEnabled((prev) => {
-      const next = !prev;
+    const next = !toolState.guidesEnabled;
+    setToolState({ guidesEnabled: next });
+    window.dispatchEvent(
+      new CustomEvent("wilderness:toggle-guides", {
+        detail: { enabled: next },
+      }),
+    );
+    if (next) {
       window.dispatchEvent(
-        new CustomEvent("wilderness:toggle-guides", {
-          detail: { enabled: next },
+        new CustomEvent("wilderness:guides-settings", {
+          detail: guidesSettings,
         }),
       );
-      if (next) {
-        window.dispatchEvent(
-          new CustomEvent("wilderness:guides-settings", {
-            detail: guidesSettings,
-          }),
-        );
-      }
-      return next;
-    });
+    }
+  };
+
+  const handleInfoToggle = () => {
+    const next = !toolState.infoEnabled;
+    setToolState({ infoEnabled: next });
+    window.dispatchEvent(
+      new CustomEvent("wilderness:toggle-info", {
+        detail: { enabled: next },
+      }),
+    );
   };
 
   const toggleSetting = (key: keyof typeof guidesSettings) => {
@@ -59,7 +71,7 @@ export function ContentToolbar() {
   return (
     <div className="fixed bottom-6 left-1/2 z-[2147483647] -translate-x-1/2">
       <div className="relative flex flex-col items-center">
-        {guidesEnabled ? (
+        {toolState.guidesEnabled ? (
           <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
             <div className="flex items-center gap-2 rounded-full border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur">
               <Button
@@ -85,14 +97,27 @@ export function ContentToolbar() {
             size="sm"
             variant="secondary"
             onClick={handleGuidesToggle}
-            aria-pressed={guidesEnabled}
+            aria-pressed={toolState.guidesEnabled}
             aria-label="Toggle guides ruler"
             className={cn(
-              guidesEnabled &&
+              toolState.guidesEnabled &&
                 "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
           >
             Guides
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleInfoToggle}
+            aria-pressed={toolState.infoEnabled}
+            aria-label="Toggle info inspector"
+            className={cn(
+              toolState.infoEnabled &&
+                "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            Info
           </Button>
 
           <DropdownMenu>
