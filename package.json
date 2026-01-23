@@ -1,0 +1,44 @@
+{
+  "name": "wilderness",
+  "description": "Wilderness browser extension",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "compile": "tsc --noEmit",
+    "format": "biome format --write .",
+    "rules:generate": "agent-rules",
+    "postinstall": "wxt prepare && simple-git-hooks"
+  },
+  "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@wxt-dev/module-react": "^1.1.5",
+    "agent-rules": "git+https://github.com/madebywild/agent-rules.git#main",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "simple-git-hooks": "^2.11.1",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.9.3",
+    "wxt": "^0.20.6"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npm run format"
+  }
+}
