@@ -14,6 +14,7 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - Tailwind for layout and styling around the UI primitives.
 
 ## Behavior
-- A bottom-centered toolbar is always visible on supported pages.
+- The toolbar only mounts after the user clicks the extension action.
+- The content script is injected into the active tab on click.
 - Menu items log to the console as placeholders for future tools.
 - The sample button triggers a simple `window.alert`.
