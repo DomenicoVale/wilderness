@@ -10,5 +10,8 @@
   },
   "linter": {
     "enabled": false
+  },
+  "files": {
+    "ignore": ["ProjectVisBug/**"]
   }
 }

@@ -1,13 +1,13 @@
-import { defineConfig } from 'wxt';
+import { defineConfig } from "wxt";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
-  modules: ['@wxt-dev/module-react'],
+  modules: ["@wxt-dev/module-react"],
   manifest: {
     action: {
-      default_title: 'wilderness',
+      default_title: "wilderness",
     },
-    permissions: ['scripting'],
-    host_permissions: ['<all_urls>'],
+    permissions: ["scripting"],
+    host_permissions: ["<all_urls>"],
   },
 });

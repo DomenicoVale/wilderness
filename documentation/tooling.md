@@ -4,6 +4,7 @@
 - Biome is the formatter.
 - Run `npm run format` to format the repository.
 - A `pre-commit` hook runs the formatter automatically via `simple-git-hooks`.
+- Run `npm run check` after significant changes to validate TypeScript.
 
 ## Styling
 - Tailwind is configured in `tailwind.config.js`.

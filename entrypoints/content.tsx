@@ -1,15 +1,19 @@
 /// <reference path="../.wxt/wxt.d.ts" />
 
-import { createRoot } from 'react-dom/client';
-import { ContentToolbar } from './content-ui/content-toolbar';
-import './content-ui/style.css';
+import { createRoot } from "react-dom/client";
+import { ContentToolbar } from "./content-ui/content-toolbar";
+import { createGuidesController } from "./content-ui/guides/guides_tool";
+import "./content-ui/style.css";
 
-const TOGGLE_UI_MESSAGE = 'wilderness:toggle-ui';
+const TOGGLE_UI_MESSAGE = "wilderness:toggle-ui";
+const TOGGLE_GUIDES_EVENT = "wilderness:toggle-guides";
 
 type ContentScriptContextType = InstanceType<typeof ContentScriptContext>;
 
-let contentUi: ShadowRootContentScriptUi<ReturnType<typeof createRoot>> | null = null;
+let contentUi: ShadowRootContentScriptUi<ReturnType<typeof createRoot>> | null =
+  null;
 let isMounted = false;
+let guidesController: ReturnType<typeof createGuidesController> | null = null;
 
 const ensureUi = async (ctx: ContentScriptContextType) => {
   if (contentUi) {
@@ -17,11 +21,11 @@ const ensureUi = async (ctx: ContentScriptContextType) => {
   }
 
   contentUi = await createShadowRootUi(ctx, {
-    name: 'wilderness-toolbar',
-    position: 'inline',
-    anchor: 'body',
+    name: "wilderness-toolbar",
+    position: "inline",
+    anchor: "body",
     onMount: (container) => {
-      const app = document.createElement('div');
+      const app = document.createElement("div");
       container.append(app);
 
       const root = createRoot(app);
@@ -30,7 +34,7 @@ const ensureUi = async (ctx: ContentScriptContextType) => {
     },
     onRemove: (root) => {
       if (!root) {
-        console.warn('[wilderness] Content UI root missing on cleanup.');
+        console.warn("[wilderness] Content UI root missing on cleanup.");
         return;
       }
 
@@ -56,14 +60,15 @@ const unmountUi = () => {
     return;
   }
 
+  guidesController?.disable();
   contentUi.remove();
   isMounted = false;
 };
 
 export default defineContentScript({
-  matches: ['<all_urls>'],
-  cssInjectionMode: 'ui',
-  registration: 'runtime',
+  matches: ["<all_urls>"],
+  cssInjectionMode: "ui",
+  registration: "runtime",
   async main(ctx) {
     browser.runtime.onMessage.addListener((message) => {
       if (message?.type !== TOGGLE_UI_MESSAGE) {
@@ -76,6 +81,18 @@ export default defineContentScript({
       }
 
       void mountUi(ctx);
+    });
+
+    window.addEventListener(TOGGLE_GUIDES_EVENT, (event) => {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      const enabled =
+        typeof detail?.enabled === "boolean" ? detail.enabled : undefined;
+
+      if (!guidesController) {
+        guidesController = createGuidesController();
+      }
+
+      guidesController.toggle(enabled);
     });
   },
 });

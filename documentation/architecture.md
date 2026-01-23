@@ -15,5 +15,9 @@
 - The content script is injected into the active tab on click.
 - The content UI mounts only after receiving the toggle message.
 
+## Guides Tool
+- Guides runs in the content script and renders overlays into the page DOM.
+- Overlays include selection boxes, hover gridlines, and distance measurements.
+
 ## Future Backend
 We plan to add an Express.js backend later and will migrate to a monorepo layout when that work begins. Until then, the extension remains a single-package repo.

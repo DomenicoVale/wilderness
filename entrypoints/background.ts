@@ -1,5 +1,5 @@
-const TOGGLE_UI_MESSAGE = 'wilderness:toggle-ui';
-const CONTENT_SCRIPT_FILE = 'content-scripts/content.js';
+const TOGGLE_UI_MESSAGE = "wilderness:toggle-ui";
+const CONTENT_SCRIPT_FILE = "content-scripts/content.js";
 
 const enabledTabs = new Set<number>();
 
@@ -21,7 +21,7 @@ const toggleForTab = async (tabId: number) => {
       enabledTabs.delete(tabId);
       return;
     } catch (error) {
-      console.warn('[wilderness] Unable to disable UI for this tab.', error);
+      console.warn("[wilderness] Unable to disable UI for this tab.", error);
       enabledTabs.delete(tabId);
       return;
     }
@@ -32,13 +32,13 @@ const toggleForTab = async (tabId: number) => {
     enabledTabs.add(tabId);
     return;
   } catch (error) {
-    console.warn('[wilderness] UI not yet injected, injecting now.', error);
+    console.warn("[wilderness] UI not yet injected, injecting now.", error);
   }
 
   try {
     await injectContentScript(tabId);
   } catch (error) {
-    console.warn('[wilderness] Failed to inject content script.', error);
+    console.warn("[wilderness] Failed to inject content script.", error);
     return;
   }
 
@@ -46,18 +46,18 @@ const toggleForTab = async (tabId: number) => {
     await sendToggleMessage(tabId);
     enabledTabs.add(tabId);
   } catch (error) {
-    console.warn('[wilderness] Unable to enable UI after injection.', error);
+    console.warn("[wilderness] Unable to enable UI after injection.", error);
   }
 };
 
 export default defineBackground(() => {
   browser.action.onClicked.addListener(async (tab) => {
     if (!tab.id) {
-      console.warn('[wilderness] Missing tab id for action click.');
+      console.warn("[wilderness] Missing tab id for action click.");
       return;
     }
 
-    console.info('[wilderness] Action clicked, toggling UI.');
+    console.info("[wilderness] Action clicked, toggling UI.");
     await toggleForTab(tab.id);
   });
 
@@ -66,7 +66,7 @@ export default defineBackground(() => {
   });
 
   browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (changeInfo.status !== 'loading') {
+    if (changeInfo.status !== "loading") {
       return;
     }
 

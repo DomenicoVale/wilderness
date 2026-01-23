@@ -12,6 +12,7 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "check": "tsc --noEmit",
     "format": "biome format --write .",
     "rules:generate": "agent-rules",
     "postinstall": "wxt prepare && simple-git-hooks"
@@ -20,12 +21,14 @@
     "@radix-ui/react-dropdown-menu": "^2.1.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "jquery": "^3.7.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@types/jquery": "^3.5.33",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.1.5",

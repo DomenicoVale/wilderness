@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "./guides/guides_styles.css";
+
 @layer base {
   :host {
     --background: 0 0% 100%;
