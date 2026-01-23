@@ -21,6 +21,9 @@ const handleAlert = () => {
 
 export function ContentToolbar() {
   const [guidesEnabled, setGuidesEnabled] = React.useState(false);
+  const [guidesSettings, setGuidesSettings] = React.useState({
+    alwaysShowDimensions: false,
+  });
 
   const handleGuidesToggle = () => {
     setGuidesEnabled((prev) => {
@@ -30,56 +33,108 @@ export function ContentToolbar() {
           detail: { enabled: next },
         }),
       );
+      if (next) {
+        window.dispatchEvent(
+          new CustomEvent("wilderness:guides-settings", {
+            detail: guidesSettings,
+          }),
+        );
+      }
+      return next;
+    });
+  };
+
+  const toggleSetting = (key: keyof typeof guidesSettings) => {
+    setGuidesSettings((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      window.dispatchEvent(
+        new CustomEvent("wilderness:guides-settings", {
+          detail: next,
+        }),
+      );
       return next;
     });
   };
 
   return (
     <div className="fixed bottom-6 left-1/2 z-[2147483647] -translate-x-1/2">
-      <div className="flex items-center gap-3 rounded-full border border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur">
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={handleGuidesToggle}
-          aria-pressed={guidesEnabled}
-          aria-label="Toggle guides ruler"
-          className={cn(
-            guidesEnabled &&
-              "bg-primary text-primary-foreground hover:bg-primary/90",
-          )}
-        >
-          Guides
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="secondary" aria-label="Open tools menu">
-              Menu
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            {MENU_ITEMS.map((item) => (
-              <DropdownMenuItem
-                key={item.value}
-                onSelect={() => {
-                  console.info(`[wilderness] Selected menu: ${item.value}`);
+      <div className="relative flex flex-col items-center">
+        {guidesEnabled ? (
+          <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur">
+              <Button
+                size="sm"
+                variant="secondary"
+                aria-pressed={guidesSettings.alwaysShowDimensions}
+                aria-label="Toggle always showing selection dimensions"
+                className={cn(
+                  guidesSettings.alwaysShowDimensions &&
+                    "bg-primary text-primary-foreground hover:bg-primary/90",
+                )}
+                onClick={() => {
+                  toggleSetting("alwaysShowDimensions");
                 }}
               >
-                {item.label}
+                Always show dims
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        <div className="flex items-center gap-3 rounded-full border border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleGuidesToggle}
+            aria-pressed={guidesEnabled}
+            aria-label="Toggle guides ruler"
+            className={cn(
+              guidesEnabled &&
+                "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            Guides
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="secondary"
+                aria-label="Open tools menu"
+              >
+                Menu
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              {MENU_ITEMS.map((item) => (
+                <DropdownMenuItem
+                  key={item.value}
+                  onSelect={() => {
+                    console.info(`[wilderness] Selected menu: ${item.value}`);
+                  }}
+                >
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={handleAlert}>
+                Sample alert
               </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={handleAlert}>
-              Sample alert
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <p className="text-sm text-muted-foreground">Welcome to Wilderness.</p>
+          <p className="text-sm text-muted-foreground">
+            Welcome to Wilderness.
+          </p>
 
-        <Button size="sm" onClick={handleAlert} aria-label="Show sample alert">
-          Try alert
-        </Button>
+          <Button
+            size="sm"
+            onClick={handleAlert}
+            aria-label="Show sample alert"
+          >
+            Try alert
+          </Button>
+        </div>
       </div>
     </div>
   );

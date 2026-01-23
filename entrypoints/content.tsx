@@ -2,11 +2,15 @@
 
 import { createRoot } from "react-dom/client";
 import { ContentToolbar } from "./content-ui/content-toolbar";
-import { createGuidesController } from "./content-ui/guides/guides_tool";
+import {
+  createGuidesController,
+  type GuidesSettings,
+} from "./content-ui/guides/guides_tool";
 import "./content-ui/style.css";
 
 const TOGGLE_UI_MESSAGE = "wilderness:toggle-ui";
 const TOGGLE_GUIDES_EVENT = "wilderness:toggle-guides";
+const GUIDES_SETTINGS_EVENT = "wilderness:guides-settings";
 
 type ContentScriptContextType = InstanceType<typeof ContentScriptContext>;
 
@@ -93,6 +97,15 @@ export default defineContentScript({
       }
 
       guidesController.toggle(enabled);
+    });
+
+    window.addEventListener(GUIDES_SETTINGS_EVENT, (event) => {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      if (!guidesController || !detail) {
+        return;
+      }
+
+      guidesController.updateSettings(detail as Partial<GuidesSettings>);
     });
   },
 });

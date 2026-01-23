@@ -1,7 +1,11 @@
-import $ from "jquery";
 import { createGuideBox } from "./guide_box.element";
 import { createGridlines } from "./gridlines.element";
-import { deepElementFromPoint, isOffBounds } from "./guides_utils";
+import {
+  getTargetRect,
+  isGuidesUiElement,
+  isOffBounds,
+  targetElementFromPoint,
+} from "./guides_utils";
 import { clearMeasurements, createMeasurements } from "./measurements";
 
 const GUIDES_STYLE_ID = "wilderness-guides-styles";
@@ -117,19 +121,43 @@ const removeGuidesStyles = () => {
 
 type GuidesState = {
   enabled: boolean;
-  selected: Element | null;
-  hovered: Element | null;
+  selected: Element | Range | null;
+  hovered: Element | Range | null;
+  lockedTarget: Element | Range | null;
 };
+
+export type GuidesSettings = {
+  alwaysShowDimensions: boolean;
+};
+
+const MOUSE_BLOCK_EVENTS: Array<keyof WindowEventMap> = [
+  "click",
+  "dblclick",
+  "mousedown",
+  "mouseup",
+  "mousemove",
+  "mouseover",
+  "mouseout",
+  "mouseenter",
+  "mouseleave",
+  "contextmenu",
+];
 
 export const createGuidesController = () => {
   const state: GuidesState = {
     enabled: false,
     selected: null,
     hovered: null,
+    lockedTarget: null,
+  };
+
+  const settings: GuidesSettings = {
+    alwaysShowDimensions: false,
   };
 
   let selectedBox: ReturnType<typeof createGuideBox> | null = null;
   let hoverBox: ReturnType<typeof createGuideBox> | null = null;
+  let lockedBox: ReturnType<typeof createGuideBox> | null = null;
   let gridlines: ReturnType<typeof createGridlines> | null = null;
 
   const ensureBoxes = () => {
@@ -141,12 +169,38 @@ export const createGuidesController = () => {
       hoverBox = createGuideBox("hover");
     }
 
+    if (!lockedBox) {
+      lockedBox = createGuideBox("locked");
+    }
+
     if (!gridlines) {
       gridlines = createGridlines();
     }
   };
 
-  const updateSelection = (next: Element | null) => {
+  const updateLockedTarget = (next: Element | Range | null) => {
+    if (!lockedBox) {
+      return;
+    }
+
+    state.lockedTarget = next;
+
+    if (!next) {
+      lockedBox.hide();
+      gridlines?.hide();
+      clearMeasurements();
+      return;
+    }
+
+    const rect = getTargetRect(next);
+    lockedBox.setRect(rect);
+    lockedBox.setLabelsVisible(true);
+    lockedBox.show();
+    gridlines?.update(rect);
+    gridlines?.show();
+  };
+
+  const updateSelection = (next: Element | Range | null) => {
     if (!selectedBox) {
       return;
     }
@@ -155,40 +209,61 @@ export const createGuidesController = () => {
 
     if (!next) {
       selectedBox.hide();
-      clearMeasurements();
+      if (!state.lockedTarget) {
+        clearMeasurements();
+      }
       return;
     }
 
-    selectedBox.setRect(next.getBoundingClientRect());
+    selectedBox.setRect(getTargetRect(next));
+    selectedBox.setLabelsVisible(settings.alwaysShowDimensions);
     selectedBox.show();
   };
 
-  const updateHover = (next: Element | null) => {
+  const updateHover = (next: Element | Range | null) => {
     if (!hoverBox) {
       return;
     }
 
     state.hovered = next;
 
-    if (!next || next === state.selected) {
+    const sameElement =
+      next instanceof Element &&
+      state.selected instanceof Element &&
+      next === state.selected;
+
+    if (!next || sameElement) {
       hoverBox.hide();
-      gridlines?.hide();
-      clearMeasurements();
+      if (!state.lockedTarget) {
+        gridlines?.hide();
+        clearMeasurements();
+      }
       return;
     }
 
-    const rect = next.getBoundingClientRect();
+    const rect = getTargetRect(next);
     hoverBox.setRect(rect);
+    hoverBox.setLabelsVisible(true);
     hoverBox.show();
-    gridlines?.update(rect);
-    gridlines?.show();
+    if (!state.lockedTarget) {
+      gridlines?.update(rect);
+      gridlines?.show();
 
-    if (state.selected) {
-      createMeasurements(state.selected, next);
+      if (state.selected) {
+        createMeasurements(state.selected, next);
+      }
     }
   };
 
-  const handleMove = (event: JQuery.Event) => {
+  const handleClick = (event: Event) => {
+    if (!state.enabled) {
+      return;
+    }
+
+    if (!(event instanceof MouseEvent)) {
+      return;
+    }
+
     if (
       typeof event.clientX !== "number" ||
       typeof event.clientY !== "number"
@@ -196,11 +271,52 @@ export const createGuidesController = () => {
       return;
     }
 
+    const preferDeepest =
+      (typeof event.altKey === "boolean" && event.altKey) ||
+      (typeof event.metaKey === "boolean" && event.metaKey);
+    const target = targetElementFromPoint(
+      event.clientX,
+      event.clientY,
+      preferDeepest,
+    );
+    if (isOffBounds(target)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!state.selected) {
+      updateSelection(target);
+      updateHover(target);
+      return;
+    }
+
+    if (state.lockedTarget) {
+      return;
+    }
+
+    if (target && state.selected !== target) {
+      updateLockedTarget(target);
+      createMeasurements(state.selected, target);
+    }
+  };
+
+  const handleMove = (event: Event) => {
     if (!state.enabled) {
       return;
     }
 
-    const target = deepElementFromPoint(event.clientX, event.clientY);
+    if (!(event instanceof MouseEvent)) {
+      return;
+    }
+
+    const preferDeepest = event.altKey || event.metaKey;
+    const target = targetElementFromPoint(
+      event.clientX,
+      event.clientY,
+      preferDeepest,
+    );
     if (isOffBounds(target)) {
       updateHover(null);
       return;
@@ -213,28 +329,28 @@ export const createGuidesController = () => {
     updateHover(target);
   };
 
-  const handleClick = (event: JQuery.Event) => {
-    if (
-      typeof event.clientX !== "number" ||
-      typeof event.clientY !== "number"
-    ) {
-      return;
-    }
-
+  const handleMouseBlock = (event: Event) => {
     if (!state.enabled) {
       return;
     }
 
-    const target = deepElementFromPoint(event.clientX, event.clientY);
-    if (isOffBounds(target)) {
+    if (!(event instanceof MouseEvent)) {
+      return;
+    }
+
+    const target =
+      event.target instanceof Element
+        ? event.target
+        : event.target instanceof Node
+          ? event.target.parentElement
+          : null;
+
+    if (target && isGuidesUiElement(target)) {
       return;
     }
 
     event.preventDefault();
-    event.stopPropagation();
-
-    updateSelection(target);
-    updateHover(target);
+    event.stopImmediatePropagation();
   };
 
   const handleScroll = () => {
@@ -251,6 +367,21 @@ export const createGuidesController = () => {
     }
   };
 
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (!state.enabled) {
+      return;
+    }
+
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    event.preventDefault();
+    updateLockedTarget(null);
+    updateSelection(null);
+    updateHover(null);
+  };
+
   const enable = () => {
     if (state.enabled) {
       return;
@@ -260,10 +391,14 @@ export const createGuidesController = () => {
     ensureGuidesStyles();
     ensureBoxes();
 
-    $("body").on("mousemove", handleMove);
-    $("body").on("click", handleClick);
+    window.addEventListener("mousemove", handleMove, true);
+    window.addEventListener("click", handleClick, true);
+    window.addEventListener("keydown", handleKeydown);
     window.addEventListener("scroll", handleScroll);
     window.addEventListener("resize", handleScroll);
+    MOUSE_BLOCK_EVENTS.forEach((type) => {
+      window.addEventListener(type, handleMouseBlock, true);
+    });
   };
 
   const disable = () => {
@@ -274,19 +409,37 @@ export const createGuidesController = () => {
     state.enabled = false;
     state.selected = null;
     state.hovered = null;
+    state.lockedTarget = null;
     selectedBox?.remove();
     hoverBox?.remove();
+    lockedBox?.remove();
     gridlines?.remove();
     selectedBox = null;
     hoverBox = null;
+    lockedBox = null;
     gridlines = null;
     clearMeasurements();
     removeGuidesStyles();
 
-    $("body").off("mousemove", handleMove);
-    $("body").off("click", handleClick);
+    window.removeEventListener("mousemove", handleMove, true);
+    window.removeEventListener("click", handleClick, true);
+    window.removeEventListener("keydown", handleKeydown);
     window.removeEventListener("scroll", handleScroll);
     window.removeEventListener("resize", handleScroll);
+    MOUSE_BLOCK_EVENTS.forEach((type) => {
+      window.removeEventListener(type, handleMouseBlock, true);
+    });
+  };
+
+  const updateSettings = (next: Partial<GuidesSettings>) => {
+    settings.alwaysShowDimensions =
+      typeof next.alwaysShowDimensions === "boolean"
+        ? next.alwaysShowDimensions
+        : settings.alwaysShowDimensions;
+
+    if (selectedBox) {
+      selectedBox.setLabelsVisible(settings.alwaysShowDimensions);
+    }
   };
 
   const toggle = (next?: boolean) => {
@@ -312,6 +465,7 @@ export const createGuidesController = () => {
     enable,
     disable,
     toggle,
+    updateSettings,
     isEnabled: () => state.enabled,
   };
 };

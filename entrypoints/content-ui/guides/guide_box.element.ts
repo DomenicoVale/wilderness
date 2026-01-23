@@ -1,13 +1,14 @@
 type GuideBoxHandle = {
   root: HTMLDivElement;
   setRect: (rect: DOMRect) => void;
+  setLabelsVisible: (visible: boolean) => void;
   show: () => void;
   hide: () => void;
   remove: () => void;
 };
 
 export const createGuideBox = (
-  variant: "selected" | "hover",
+  variant: "selected" | "hover" | "locked",
 ): GuideBoxHandle => {
   const root = document.createElement("div");
   root.className = "wilderness-guide-box";
@@ -45,6 +46,11 @@ export const createGuideBox = (
   return {
     root,
     setRect,
+    setLabelsVisible: (visible: boolean) => {
+      const display = visible ? "inline-flex" : "none";
+      widthLabel.style.display = display;
+      heightLabel.style.display = display;
+    },
     show: () => {
       root.style.display = "block";
     },

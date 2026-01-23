@@ -10,7 +10,14 @@ Guides is a ruler-style inspection tool for measuring element dimensions and dis
 - Hovering shows full-edge dotted gridlines extending to the window bounds.
 
 ## Shortcuts
-None yet.
+- Hold Alt/Command while hovering or clicking to target the deepest text node.
+- Press Escape to clear the selection and locked comparison.
+
+## Settings
+- Always show dimensions: keeps the selected element labels visible.
+
+## Behavior
+- Guides blocks page mouse handlers while active.
 
 ## Relevant Files
 - `entrypoints/content-ui/guides/guides_tool.ts`: Guides controller and event wiring.

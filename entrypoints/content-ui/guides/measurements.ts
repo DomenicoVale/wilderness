@@ -1,13 +1,12 @@
 import { createDistance, type DistancePosition } from "./distance.element";
+import { getTargetRect } from "./guides_utils";
 
 type MeasurementState = {
   distances: ReturnType<typeof createDistance>[];
-  target: Element | null;
 };
 
 const state: MeasurementState = {
   distances: [],
-  target: null,
 };
 
 const createMeasurement = (position: DistancePosition) => {
@@ -16,16 +15,14 @@ const createMeasurement = (position: DistancePosition) => {
   state.distances.push(measurement);
 };
 
-export const createMeasurements = (anchor: Element, target: Element) => {
-  if (state.target === target && state.distances.length) {
-    return;
-  }
-
-  state.target = target;
+export const createMeasurements = (
+  anchor: Element | Range,
+  target: Element | Range,
+) => {
   clearMeasurements();
 
-  const anchorBounds = anchor.getBoundingClientRect();
-  const targetBounds = target.getBoundingClientRect();
+  const anchorBounds = getTargetRect(anchor);
+  const targetBounds = getTargetRect(target);
   const midOffset = 2.5;
 
   const measurements: DistancePosition[] = [];
