@@ -26,7 +26,12 @@ export const createGuideBox = (
 
   root.append(box, widthLabel, heightLabel);
   root.style.display = "none";
-  document.documentElement.append(root);
+  const parent = document.body ?? document.documentElement;
+  if (!parent) {
+    console.warn("[Guides] Unable to mount guide box: no document root.");
+  } else {
+    parent.append(root);
+  }
 
   const setRect = (rect: DOMRect) => {
     root.style.left = `${rect.left}px`;

@@ -19,4 +19,4 @@ None yet.
 - `entrypoints/content-ui/guides/guide_box.element.ts`: Selection and hover boxes.
 - `entrypoints/content-ui/guides/distance.element.ts`: Distance line rendering.
 - `entrypoints/content-ui/guides/gridlines.element.ts`: Full-edge gridlines.
-- `entrypoints/content-ui/guides/guides_styles.css`: Guides styling.
+- `entrypoints/content-ui/guides/guides_tool.ts`: Injected Guides styles.

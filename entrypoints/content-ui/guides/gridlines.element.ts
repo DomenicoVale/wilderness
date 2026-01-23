@@ -38,7 +38,12 @@ export const createGridlines = (): GridlinesHandle => {
   const { svg, lineLeft, lineRight, lineTop, lineBottom } = createSvg();
   root.append(svg);
   root.style.display = "none";
-  document.documentElement.append(root);
+  const parent = document.body ?? document.documentElement;
+  if (!parent) {
+    console.warn("[Guides] Unable to mount gridlines: no document root.");
+  } else {
+    parent.append(root);
+  }
 
   const update = (rect: DOMRect) => {
     const winWidth = window.innerWidth;

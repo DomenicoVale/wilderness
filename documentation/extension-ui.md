@@ -8,7 +8,7 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - `entrypoints/content-ui/content-toolbar.tsx`: Toolbar React component.
 - `entrypoints/content-ui/style.css`: Tailwind entrypoint and CSS variables.
 - `entrypoints/content-ui/guides/`: Guides tool overlays and measurement logic.
-- `entrypoints/content-ui/guides/guides_styles.css`: Guides overlay styling.
+- `entrypoints/content-ui/guides/guides_tool.ts`: Injected Guides overlay styling.
 
 ## UI Stack
 - React for rendering.

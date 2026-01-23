@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "./guides/guides_styles.css";
-
 @layer base {
   :host {
     --background: 0 0% 100%;
@@ -29,5 +27,8 @@
 
     color: hsl(var(--foreground));
     font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    text-size-adjust: 100%;
   }
 }

@@ -23,7 +23,12 @@ export const createDistance = (): DistanceHandle => {
   label.className = "wilderness-distance__label";
 
   root.append(line, label);
-  document.documentElement.append(root);
+  const parent = document.body ?? document.documentElement;
+  if (!parent) {
+    console.warn("[Guides] Unable to mount distance: no document root.");
+  } else {
+    parent.append(root);
+  }
 
   const setPosition = ({
     orientation,

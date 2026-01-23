@@ -17,7 +17,7 @@ const isToolbarElement = (el: Element) => {
 };
 
 const isGuidesElement = (el: Element) =>
-  el.closest("wilderness-guide-box, wilderness-distance");
+  el.closest("wilderness-guide-box, wilderness-distance, wilderness-gridlines");
 
 export const isOffBounds = (node: Element | null) => {
   if (!node) {
