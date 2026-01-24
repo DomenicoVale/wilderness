@@ -1,7 +1,39 @@
 import { TOGGLE_UI_MESSAGE } from "../lib/events";
 const CONTENT_SCRIPT_FILE = "content-scripts/content.js";
+const CONSOLE_INTERCEPTOR_FILE = "console-interceptor.js";
 
 const enabledTabs = new Set<number>();
+
+/**
+ * Register the console interceptor to run in MAIN world on all pages.
+ * This captures console logs even before the extension UI is opened.
+ */
+const registerConsoleInterceptor = async () => {
+  try {
+    // Unregister first in case it already exists (during extension reload)
+    await browser.scripting
+      .unregisterContentScripts({ ids: ["wilderness-console-interceptor"] })
+      .catch((error) => {
+        console.warn(
+          "[wilderness] Failed to unregister console interceptor.",
+          error,
+        );
+      });
+
+    await browser.scripting.registerContentScripts([
+      {
+        id: "wilderness-console-interceptor",
+        matches: ["<all_urls>"],
+        js: [CONSOLE_INTERCEPTOR_FILE],
+        runAt: "document_start",
+        world: "MAIN",
+      },
+    ]);
+    console.info("[wilderness] Console interceptor registered.");
+  } catch (error) {
+    console.warn("[wilderness] Failed to register console interceptor:", error);
+  }
+};
 
 const sendToggleMessage = async (tabId: number) => {
   await browser.tabs.sendMessage(tabId, { type: TOGGLE_UI_MESSAGE });
@@ -51,6 +83,9 @@ const toggleForTab = async (tabId: number) => {
 };
 
 export default defineBackground(() => {
+  // Register console interceptor on extension startup
+  void registerConsoleInterceptor();
+
   browser.action.onClicked.addListener(async (tab) => {
     if (!tab.id) {
       console.warn("[wilderness] Missing tab id for action click.");

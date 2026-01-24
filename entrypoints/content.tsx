@@ -4,8 +4,9 @@ import { createRoot } from "react-dom/client";
 import { ContentToolbar } from "./content-ui/content-toolbar";
 import { createGuidesController } from "./content-ui/guides/guides-tool";
 import { createInfoController } from "./content-ui/info/info-tool";
-import { setToolState } from "./content-ui/tool-state";
+import { getToolState, setToolState } from "./content-ui/tool-state";
 import { createContentEventHandlers } from "../lib/content-events";
+import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
 import { TOGGLE_UI_MESSAGE } from "../lib/events";
 import "./content-ui/style.css";
 type ContentScriptContextType = InstanceType<typeof ContentScriptContext>;
@@ -48,6 +49,28 @@ const ensureInfoController = () => {
   }
 
   return infoController;
+};
+
+const toggleConsolePanel = () => {
+  const current = getToolState();
+  setToolState({ consolePanelOpen: !current.consolePanelOpen });
+};
+
+/**
+ * Handles messages from the console interceptor (MAIN world).
+ * Validates the message source and adds entries to the console store.
+ */
+const handleConsoleMessage = (event: MessageEvent) => {
+  // Only accept messages from the same window
+  if (event.source !== window) {
+    return;
+  }
+
+  if (!isConsoleMessage(event.data)) {
+    return;
+  }
+
+  addConsoleEntry(event.data);
 };
 
 const ensureUi = async (ctx: ContentScriptContextType) => {
@@ -125,10 +148,14 @@ export default defineContentScript({
       getInfoController: () => infoController,
       disableGuides,
       disableInfo,
+      toggleConsolePanel,
     });
 
     Object.entries(eventHandlers).forEach(([eventName, handler]) => {
       window.addEventListener(eventName, handler);
     });
+
+    // Listen for console messages from the MAIN world interceptor
+    window.addEventListener("message", handleConsoleMessage);
   },
 });

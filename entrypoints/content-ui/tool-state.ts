@@ -1,6 +1,7 @@
 export type ToolState = {
   guidesEnabled: boolean;
   infoEnabled: boolean;
+  consolePanelOpen: boolean;
 };
 
 type Listener = () => void;
@@ -8,6 +9,7 @@ type Listener = () => void;
 let state: ToolState = {
   guidesEnabled: false,
   infoEnabled: false,
+  consolePanelOpen: false,
 };
 
 const listeners = new Set<Listener>();

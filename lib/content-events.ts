@@ -6,6 +6,7 @@ import { createInfoController } from "../entrypoints/content-ui/info/info-tool";
 import { setToolState } from "../entrypoints/content-ui/tool-state";
 import {
   GUIDES_SETTINGS_EVENT,
+  TOGGLE_CONSOLE_EVENT,
   TOGGLE_GUIDES_EVENT,
   TOGGLE_INFO_EVENT,
 } from "./events";
@@ -20,6 +21,7 @@ type ContentEventDeps = {
   getInfoController: () => InfoController | null;
   disableGuides: () => void;
   disableInfo: () => void;
+  toggleConsolePanel: () => void;
 };
 
 /** Checks if target is an editable element where keyboard shortcuts should be ignored. */
@@ -42,6 +44,7 @@ export const createContentEventHandlers = ({
   getInfoController,
   disableGuides,
   disableInfo,
+  toggleConsolePanel,
 }: ContentEventDeps): Record<string, (event: Event) => void> => ({
   [TOGGLE_GUIDES_EVENT]: (event) => {
     const detail = event instanceof CustomEvent ? event.detail : null;
@@ -85,11 +88,16 @@ export const createContentEventHandlers = ({
     });
   },
 
+  [TOGGLE_CONSOLE_EVENT]: () => {
+    toggleConsolePanel();
+  },
+
   /*
    * Keyboard Shortcuts
    *
    * i: Toggle Info mode.
    * g: Toggle Guides mode.
+   * c: Toggle Console panel.
    */
   keydown: (event) => {
     if (!(event instanceof KeyboardEvent)) {
@@ -122,6 +130,9 @@ export const createContentEventHandlers = ({
           guidesEnabled: next,
           infoEnabled: getInfoController()?.isEnabled() ?? false,
         });
+      },
+      c: () => {
+        toggleConsolePanel();
       },
     };
 
