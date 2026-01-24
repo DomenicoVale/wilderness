@@ -2,7 +2,7 @@ import {
   type DeepTarget,
   getDeepTargetFromPoint,
   getElementForTarget,
-} from "../element_pick";
+} from "../../../lib/deep-pick";
 
 const TOOLBAR_HOST = "wilderness-toolbar";
 const INFO_TIP_SELECTOR = ".wilderness-info-tip";

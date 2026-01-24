@@ -1,4 +1,4 @@
-import { type DeepTarget, getElementForTarget } from "../element_pick";
+import { type DeepTarget, getElementForTarget } from "../../../lib/deep-pick";
 
 const TOOLBAR_HOST = "wilderness-toolbar";
 

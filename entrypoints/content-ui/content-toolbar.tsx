@@ -8,7 +8,12 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import { cn } from "../../lib/utils";
-import { getToolState, setToolState, subscribeToolState } from "./tool_state";
+import {
+  GUIDES_SETTINGS_EVENT,
+  TOGGLE_GUIDES_EVENT,
+  TOGGLE_INFO_EVENT,
+} from "../../lib/events";
+import { getToolState, setToolState, subscribeToolState } from "./tool-state";
 
 const MENU_ITEMS = [
   { label: "Inspect styles", value: "inspect" },
@@ -33,13 +38,13 @@ export function ContentToolbar() {
     const next = !toolState.guidesEnabled;
     setToolState({ guidesEnabled: next });
     window.dispatchEvent(
-      new CustomEvent("wilderness:toggle-guides", {
+      new CustomEvent(TOGGLE_GUIDES_EVENT, {
         detail: { enabled: next },
       }),
     );
     if (next) {
       window.dispatchEvent(
-        new CustomEvent("wilderness:guides-settings", {
+        new CustomEvent(GUIDES_SETTINGS_EVENT, {
           detail: guidesSettings,
         }),
       );
@@ -50,7 +55,7 @@ export function ContentToolbar() {
     const next = !toolState.infoEnabled;
     setToolState({ infoEnabled: next });
     window.dispatchEvent(
-      new CustomEvent("wilderness:toggle-info", {
+      new CustomEvent(TOGGLE_INFO_EVENT, {
         detail: { enabled: next },
       }),
     );
@@ -60,7 +65,7 @@ export function ContentToolbar() {
     setGuidesSettings((prev) => {
       const next = { ...prev, [key]: !prev[key] };
       window.dispatchEvent(
-        new CustomEvent("wilderness:guides-settings", {
+        new CustomEvent(GUIDES_SETTINGS_EVENT, {
           detail: next,
         }),
       );

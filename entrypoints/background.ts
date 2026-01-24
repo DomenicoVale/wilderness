@@ -1,4 +1,4 @@
-const TOGGLE_UI_MESSAGE = "wilderness:toggle-ui";
+import { TOGGLE_UI_MESSAGE } from "../lib/events";
 const CONTENT_SCRIPT_FILE = "content-scripts/content.js";
 
 const enabledTabs = new Set<number>();

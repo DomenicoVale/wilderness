@@ -10,6 +10,7 @@ Guides is a ruler-style inspection tool for measuring element dimensions and dis
 - Hovering shows full-edge dotted gridlines extending to the window bounds.
 
 ## Shortcuts
+- `g`: Toggle Guides mode.
 - Hold Alt/Command while hovering or clicking to target the deepest text node.
 - Press Escape to clear the selection and locked comparison.
 

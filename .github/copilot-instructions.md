@@ -19,6 +19,9 @@ The `ProjectVisBug/` folder is local reference material only. Do not format, lin
 ## Extension UI Scope
 The extension only renders injected UI. Do not add popup, options, or other extension windows unless explicitly requested.
 
+## File Naming
+- Use kebab-case for new file names (e.g., `my-file.ts`).
+
 
 ## UI stack conventions for injected toolbar.
 

@@ -1,4 +1,4 @@
-import type { StyleEntry } from "./info_utils";
+import type { StyleEntry } from "./info-utils";
 
 type InfoTipHandle = {
   root: HTMLDivElement;

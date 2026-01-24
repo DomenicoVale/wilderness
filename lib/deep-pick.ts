@@ -35,6 +35,7 @@ const createRangeFromTextNode = (node: Node) => {
   return range;
 };
 
+// Prefer caret APIs to find a text node under the pointer.
 const getCaretTarget = (x: number, y: number) => {
   const doc = document as Document & {
     caretPositionFromPoint?: (x: number, y: number) => CaretPosition | null;
@@ -87,6 +88,7 @@ const getCaretTarget = (x: number, y: number) => {
   return null;
 };
 
+// Pick an element or text range under the pointer.
 export const getDeepTargetFromPoint = (
   x: number,
   y: number,
@@ -104,6 +106,7 @@ export const getDeepTargetFromPoint = (
   return deepElementFromPoint(x, y);
 };
 
+// Convert a DeepTarget to a concrete element when needed.
 export const getElementForTarget = (target: DeepTarget | null) => {
   if (!target) {
     return null;
@@ -121,9 +124,11 @@ export const getElementForTarget = (target: DeepTarget | null) => {
   return container.parentElement;
 };
 
+// Alt/Command indicates deep picking for text nodes.
 export const isDeepPickEvent = (event: MouseEvent) =>
   event.altKey || event.metaKey;
 
+// Provide a rect for both elements and text ranges.
 export const getTargetRect = (target: DeepTarget) => {
   if (target instanceof Element) {
     return target.getBoundingClientRect();

@@ -1,7 +1,7 @@
-const tailwindcssAnimate = require("tailwindcss-animate");
+import tailwindcssAnimate from "tailwindcss-animate";
 
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: ["./entrypoints/**/*.{ts,tsx,html}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {

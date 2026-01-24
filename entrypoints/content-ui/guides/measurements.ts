@@ -1,5 +1,5 @@
 import { createDistance, type DistancePosition } from "./distance.element";
-import { getTargetRect } from "./guides_utils";
+import { getTargetRect } from "./guides-utils";
 
 type MeasurementState = {
   distances: ReturnType<typeof createDistance>[];
