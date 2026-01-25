@@ -34,7 +34,7 @@
     if (typeof arg === "string") return { type: "string", value: arg };
     if (typeof arg === "number") return { type: "number", value: String(arg) };
     if (typeof arg === "boolean") return { type: "boolean", value: String(arg) };
-    if (typeof arg === "bigint") return { type: "bigint", value: arg + "n" };
+    if (typeof arg === "bigint") return { type: "bigint", value: `${arg}n` };
     if (typeof arg === "symbol") return { type: "symbol", value: arg.toString() };
     if (typeof arg === "function") return { type: "function", name: arg.name || "(anonymous)" };
 
@@ -61,25 +61,27 @@
       }
       seen.add(arg);
 
+      // biome-ignore lint/correctness/noInnerDeclarations: ES5 compatibility for injected script
       var isArray = Array.isArray(arg);
+      // biome-ignore lint/correctness/noInnerDeclarations: ES5 compatibility for injected script
       var preview, fullValue;
 
       try {
         fullValue = JSON.stringify(
           arg,
-          (key, val) => {
-            if (typeof val === "function") return "[Function: " + (val.name || "anonymous") + "]";
-            if (val instanceof Element) return "[Element: <" + val.tagName.toLowerCase() + ">]";
-            if (val instanceof Node) return "[Node: " + val.nodeName + "]";
-            if (typeof val === "bigint") return val + "n";
+          (_key, val) => {
+            if (typeof val === "function") return `[Function: ${val.name || "anonymous"}]`;
+            if (val instanceof Element) return `[Element: <${val.tagName.toLowerCase()}>]`;
+            if (val instanceof Node) return `[Node: ${val.nodeName}]`;
+            if (typeof val === "bigint") return `${val}n`;
             if (typeof val === "symbol") return val.toString();
             return val;
           },
           2
         );
-        preview = fullValue.length > 100 ? fullValue.substring(0, 100) + "..." : fullValue;
-      } catch (e) {
-        preview = isArray ? "[Array(" + arg.length + ")]" : "[Object]";
+        preview = fullValue.length > 100 ? `${fullValue.substring(0, 100)}...` : fullValue;
+      } catch (_e) {
+        preview = isArray ? `[Array(${arg.length})]` : "[Object]";
         fullValue = preview;
       }
 
@@ -97,8 +99,7 @@
    * Creates an intercepted console method.
    */
   function createInterceptedMethod(method) {
-    return function () {
-      var args = Array.prototype.slice.call(arguments);
+    return (...args) => {
       var serializedArgs = args.map((arg) => serializeArg(arg));
 
       window.postMessage(
@@ -130,7 +131,7 @@
           {
             type: "error",
             message: event.message,
-            stack: event.filename + ":" + event.lineno + ":" + event.colno,
+            stack: `${event.filename}:${event.lineno}:${event.colno}`,
           },
         ],
         timestamp: Date.now(),

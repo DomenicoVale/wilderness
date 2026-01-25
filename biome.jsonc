@@ -11,6 +11,7 @@
     "includes": ["**/*.{ts,js,tsx,jsx,mjs,css,json,jsonc,md,mdx,gql,graphql}", "!**/node_modules"]
   },
   "assist": {
+    "enabled": true,
     "actions": {
       "source": {
         "organizeImports": "on"
@@ -30,11 +31,16 @@
       "quoteStyle": "double",
       "semicolons": "always",
       "trailingCommas": "es5"
-    }
+    },
+    // WXT framework globals
+    "globals": ["browser", "defineBackground", "createShadowRootUi", "defineContentScript"]
   },
   "css": {
     "parser": {
       "tailwindDirectives": true
+    },
+    "linter": {
+      "enabled": true
     }
   },
   "linter": {
@@ -51,8 +57,18 @@
       },
       "correctness": {
         "recommended": true,
-        "noUnusedImports": "error",
-        "noUnusedVariables": "error",
+        "noUnusedImports": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "noUnusedVariables": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "noUnusedFunctionParameters": {
+          "level": "error",
+          "fix": "safe"
+        },
         "noUndeclaredVariables": "error"
       },
       "performance": {
@@ -64,14 +80,24 @@
           "level": "warn",
           "fix": "none",
           // Using specific console methods means they were added on purpose.
-          "options": { "allow": ["error", "warn", "info"] }
-        }
+          "options": { "allow": ["log", "error", "warn", "info", "debug"] }
+        },
+        // @tailwind directives are valid with Tailwind CSS
+        "noUnknownAtRules": "off",
+        // forEach callbacks calling methods like .remove() or invoking callbacks are valid
+        "useIterableCallbackReturn": "off",
+        // Array index keys are acceptable when items have no stable ID
+        "noArrayIndexKey": "off"
       },
       "nursery": {
         "recommended": true
       },
       "style": {
-        "recommended": true
+        "recommended": true,
+        "useTemplate": {
+          "level": "warn",
+          "fix": "safe"
+        }
       }
     }
   }

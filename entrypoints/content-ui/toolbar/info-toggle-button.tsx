@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Button } from "../../../components/ui/button";
 import { TOGGLE_INFO_EVENT } from "../../../lib/events";
 import { cn } from "../../../lib/utils";

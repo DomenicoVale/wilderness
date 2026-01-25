@@ -44,6 +44,7 @@ export function ConsolePanel({ onClose }: ConsolePanelProps) {
   }, []);
 
   // Auto-scroll to bottom when new entries arrive unless user paused it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entries.length is intentional to trigger scroll on new entries
   React.useLayoutEffect(() => {
     if (!autoScrollRef.current) {
       return;
