@@ -24,17 +24,41 @@ type ContentEventDeps = {
   toggleConsolePanel: () => void;
 };
 
-/** Checks if target is an editable element where keyboard shortcuts should be ignored. */
-const isEditableTarget = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) {
+const EDITABLE_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
+
+const isEditableElement = (value: unknown): value is HTMLElement => {
+  if (!value || typeof value !== "object") {
     return false;
   }
 
-  if (target.isContentEditable) {
-    return true;
+  return typeof (value as HTMLElement).tagName === "string";
+};
+
+/** Checks if target is an editable element where keyboard shortcuts should be ignored. */
+const isEditableTarget = (event: Event) => {
+  const path = "composedPath" in event ? event.composedPath() : [];
+  const targets = [event.target, ...path];
+
+  for (const item of targets) {
+    if (!isEditableElement(item)) {
+      continue;
+    }
+
+    if (item.isContentEditable) {
+      return true;
+    }
+
+    const tagName = item.tagName?.toUpperCase();
+    if (tagName && EDITABLE_TAGS.has(tagName)) {
+      return true;
+    }
+
+    if (item.getAttribute?.("role") === "textbox") {
+      return true;
+    }
   }
 
-  return ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+  return false;
 };
 
 export const createContentEventHandlers = ({
@@ -147,7 +171,7 @@ export const createContentEventHandlers = ({
       return;
     }
 
-    if (isEditableTarget(event.target)) {
+    if (isEditableTarget(event)) {
       return;
     }
 
