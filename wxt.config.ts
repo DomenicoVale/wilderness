@@ -8,6 +8,9 @@ export default defineConfig({
       entries: ["entrypoints/**/*.{ts,tsx,html}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
     },
   }),
+  webExt: {
+    startUrls: ["https://www.google.com"],
+  },
   manifest: {
     action: {
       default_title: "wilderness",
