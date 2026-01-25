@@ -4,7 +4,7 @@
  * Hooks all console methods and forwards logs to the content script.
  * This file is injected into the MAIN world via chrome.scripting API.
  */
-(function () {
+(() => {
   // Prevent double injection
   if (window.__wildernessConsoleInterceptorInstalled) {
     return;
@@ -33,13 +33,10 @@
     if (arg === undefined) return { type: "undefined", value: "undefined" };
     if (typeof arg === "string") return { type: "string", value: arg };
     if (typeof arg === "number") return { type: "number", value: String(arg) };
-    if (typeof arg === "boolean")
-      return { type: "boolean", value: String(arg) };
+    if (typeof arg === "boolean") return { type: "boolean", value: String(arg) };
     if (typeof arg === "bigint") return { type: "bigint", value: arg + "n" };
-    if (typeof arg === "symbol")
-      return { type: "symbol", value: arg.toString() };
-    if (typeof arg === "function")
-      return { type: "function", name: arg.name || "(anonymous)" };
+    if (typeof arg === "symbol") return { type: "symbol", value: arg.toString() };
+    if (typeof arg === "function") return { type: "function", name: arg.name || "(anonymous)" };
 
     if (arg instanceof Error) {
       return { type: "error", message: arg.message, stack: arg.stack };
@@ -70,22 +67,17 @@
       try {
         fullValue = JSON.stringify(
           arg,
-          function (key, val) {
-            if (typeof val === "function")
-              return "[Function: " + (val.name || "anonymous") + "]";
-            if (val instanceof Element)
-              return "[Element: <" + val.tagName.toLowerCase() + ">]";
+          (key, val) => {
+            if (typeof val === "function") return "[Function: " + (val.name || "anonymous") + "]";
+            if (val instanceof Element) return "[Element: <" + val.tagName.toLowerCase() + ">]";
             if (val instanceof Node) return "[Node: " + val.nodeName + "]";
             if (typeof val === "bigint") return val + "n";
             if (typeof val === "symbol") return val.toString();
             return val;
           },
-          2,
+          2
         );
-        preview =
-          fullValue.length > 100
-            ? fullValue.substring(0, 100) + "..."
-            : fullValue;
+        preview = fullValue.length > 100 ? fullValue.substring(0, 100) + "..." : fullValue;
       } catch (e) {
         preview = isArray ? "[Array(" + arg.length + ")]" : "[Object]";
         fullValue = preview;
@@ -107,9 +99,7 @@
   function createInterceptedMethod(method) {
     return function () {
       var args = Array.prototype.slice.call(arguments);
-      var serializedArgs = args.map(function (arg) {
-        return serializeArg(arg);
-      });
+      var serializedArgs = args.map((arg) => serializeArg(arg));
 
       window.postMessage(
         {
@@ -118,7 +108,7 @@
           args: serializedArgs,
           timestamp: Date.now(),
         },
-        "*",
+        "*"
       );
 
       return originalMethods[method].apply(console, args);
@@ -126,12 +116,12 @@
   }
 
   // Hook all console methods
-  METHODS.forEach(function (method) {
+  METHODS.forEach((method) => {
     console[method] = createInterceptedMethod(method);
   });
 
   // Capture uncaught errors
-  window.addEventListener("error", function (event) {
+  window.addEventListener("error", (event) => {
     window.postMessage(
       {
         source: CONSOLE_MESSAGE_SOURCE,
@@ -146,26 +136,22 @@
         timestamp: Date.now(),
         isUncaught: true,
       },
-      "*",
+      "*"
     );
   });
 
   // Capture unhandled promise rejections
-  window.addEventListener("unhandledrejection", function (event) {
+  window.addEventListener("unhandledrejection", (event) => {
     var reason = event.reason;
     window.postMessage(
       {
         source: CONSOLE_MESSAGE_SOURCE,
         method: "error",
-        args: [
-          reason instanceof Error
-            ? { type: "error", message: reason.message, stack: reason.stack }
-            : serializeArg(reason),
-        ],
+        args: [reason instanceof Error ? { type: "error", message: reason.message, stack: reason.stack } : serializeArg(reason)],
         timestamp: Date.now(),
         isUnhandledRejection: true,
       },
-      "*",
+      "*"
     );
   });
 })();

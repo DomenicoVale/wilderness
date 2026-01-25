@@ -80,20 +80,14 @@ const getCaretTarget = (x: number, y: number) => {
 
   if (!warnedUnsupportedCaret) {
     warnedUnsupportedCaret = true;
-    console.warn(
-      "[Wilderness] Deep selection is not supported in this browser.",
-    );
+    console.warn("[Wilderness] Deep selection is not supported in this browser.");
   }
 
   return null;
 };
 
 // Pick an element or text range under the pointer.
-export const getDeepTargetFromPoint = (
-  x: number,
-  y: number,
-  preferDeepest: boolean,
-) => {
+export const getDeepTargetFromPoint = (x: number, y: number, preferDeepest: boolean) => {
   if (!preferDeepest) {
     return deepElementFromPoint(x, y);
   }
@@ -125,8 +119,7 @@ export const getElementForTarget = (target: DeepTarget | null) => {
 };
 
 // Alt/Command indicates deep picking for text nodes.
-export const isDeepPickEvent = (event: MouseEvent) =>
-  event.altKey || event.metaKey;
+export const isDeepPickEvent = (event: MouseEvent) => event.altKey || event.metaKey;
 
 // Provide a rect for both elements and text ranges.
 export const getTargetRect = (target: DeepTarget) => {

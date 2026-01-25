@@ -15,10 +15,7 @@ const createMeasurement = (position: DistancePosition) => {
   state.distances.push(measurement);
 };
 
-export const createMeasurements = (
-  anchor: Element | Range,
-  target: Element | Range,
-) => {
+export const createMeasurements = (anchor: Element | Range, target: Element | Range) => {
   clearMeasurements();
 
   const anchorBounds = getTargetRect(anchor);
@@ -37,10 +34,7 @@ export const createMeasurements = (
     });
   }
 
-  if (
-    anchorBounds.right < targetBounds.right &&
-    anchorBounds.right > targetBounds.left
-  ) {
+  if (anchorBounds.right < targetBounds.right && anchorBounds.right > targetBounds.left) {
     measurements.push({
       orientation: "horizontal",
       x: anchorBounds.right,
@@ -58,10 +52,7 @@ export const createMeasurements = (
       length: anchorBounds.left - targetBounds.right,
       distance: anchorBounds.left - targetBounds.right,
     });
-  } else if (
-    anchorBounds.left > targetBounds.left &&
-    anchorBounds.left < targetBounds.right
-  ) {
+  } else if (anchorBounds.left > targetBounds.left && anchorBounds.left < targetBounds.right) {
     measurements.push({
       orientation: "horizontal",
       x: targetBounds.left,
@@ -81,10 +72,7 @@ export const createMeasurements = (
     });
   }
 
-  if (
-    anchorBounds.top > targetBounds.top &&
-    anchorBounds.top < targetBounds.bottom
-  ) {
+  if (anchorBounds.top > targetBounds.top && anchorBounds.top < targetBounds.bottom) {
     measurements.push({
       orientation: "vertical",
       x: anchorBounds.left + anchorBounds.width / 2 - midOffset,
@@ -104,10 +92,7 @@ export const createMeasurements = (
     });
   }
 
-  if (
-    anchorBounds.bottom < targetBounds.bottom &&
-    anchorBounds.bottom > targetBounds.top
-  ) {
+  if (anchorBounds.bottom < targetBounds.bottom && anchorBounds.bottom > targetBounds.top) {
     measurements.push({
       orientation: "vertical",
       x: anchorBounds.left + anchorBounds.width / 2 - midOffset,
@@ -117,10 +102,7 @@ export const createMeasurements = (
     });
   }
 
-  if (
-    anchorBounds.right > targetBounds.right &&
-    anchorBounds.left < targetBounds.left
-  ) {
+  if (anchorBounds.right > targetBounds.right && anchorBounds.left < targetBounds.left) {
     measurements.push({
       orientation: "horizontal",
       x: targetBounds.right,
@@ -137,10 +119,7 @@ export const createMeasurements = (
     });
   }
 
-  if (
-    anchorBounds.top < targetBounds.top &&
-    anchorBounds.bottom > targetBounds.bottom
-  ) {
+  if (anchorBounds.top < targetBounds.top && anchorBounds.bottom > targetBounds.bottom) {
     measurements.push({
       orientation: "vertical",
       x: anchorBounds.left + anchorBounds.width / 2 - midOffset,

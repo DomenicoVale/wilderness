@@ -1,10 +1,7 @@
 import * as React from "react";
 import { Button } from "../../../components/ui/button";
+import { GUIDES_SETTINGS_EVENT, TOGGLE_GUIDES_EVENT } from "../../../lib/events";
 import { cn } from "../../../lib/utils";
-import {
-  GUIDES_SETTINGS_EVENT,
-  TOGGLE_GUIDES_EVENT,
-} from "../../../lib/events";
 import { setToolState } from "../tool-state";
 export type GuidesSettings = {
   alwaysShowDimensions: boolean;
@@ -15,17 +12,14 @@ type GuidesToggleButtonProps = {
   settings: GuidesSettings;
 };
 
-export const GuidesToggleButton = ({
-  enabled,
-  settings,
-}: GuidesToggleButtonProps) => {
+export const GuidesToggleButton = ({ enabled, settings }: GuidesToggleButtonProps) => {
   const handleToggle = () => {
     const next = !enabled;
     setToolState({ guidesEnabled: next });
     window.dispatchEvent(
       new CustomEvent(TOGGLE_GUIDES_EVENT, {
         detail: { enabled: next },
-      }),
+      })
     );
     if (!next) {
       return;
@@ -34,7 +28,7 @@ export const GuidesToggleButton = ({
     window.dispatchEvent(
       new CustomEvent(GUIDES_SETTINGS_EVENT, {
         detail: settings,
-      }),
+      })
     );
   };
 
@@ -45,9 +39,7 @@ export const GuidesToggleButton = ({
       onClick={handleToggle}
       aria-pressed={enabled}
       aria-label="Toggle guides ruler"
-      className={cn(
-        enabled && "bg-primary text-primary-foreground hover:bg-primary/90",
-      )}
+      className={cn(enabled && "bg-primary text-primary-foreground hover:bg-primary/90")}
     >
       Guides
     </Button>

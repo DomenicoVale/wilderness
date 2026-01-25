@@ -1,8 +1,4 @@
-import {
-  type DeepTarget,
-  getDeepTargetFromPoint,
-  getElementForTarget,
-} from "../../../lib/deep-pick";
+import { type DeepTarget, getDeepTargetFromPoint, getElementForTarget } from "../../../lib/deep-pick";
 
 const TOOLBAR_HOST = "wilderness-toolbar";
 const INFO_TIP_SELECTOR = ".wilderness-info-tip";
@@ -14,18 +10,14 @@ const isToolbarElement = (el: Element) => {
   }
 
   const rootNode = el.getRootNode();
-  if (
-    rootNode instanceof ShadowRoot &&
-    rootNode.host?.tagName?.toLowerCase() === TOOLBAR_HOST
-  ) {
+  if (rootNode instanceof ShadowRoot && rootNode.host?.tagName?.toLowerCase() === TOOLBAR_HOST) {
     return true;
   }
 
   return false;
 };
 
-const isGuideElement = (el: Element) =>
-  el.closest("wilderness-guide-box, wilderness-distance, wilderness-gridlines");
+const isGuideElement = (el: Element) => el.closest("wilderness-guide-box, wilderness-distance, wilderness-gridlines");
 
 export const isInfoUiElement = (el: Element) =>
   isToolbarElement(el) ||
@@ -92,8 +84,7 @@ const desiredPropMap: Record<string, string> = {
   gridAutoFlow: "row",
 };
 
-export const camelToDash = (camelString = "") =>
-  camelString.replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`);
+export const camelToDash = (camelString = "") => camelString.replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`);
 
 export type StyleEntry = {
   prop: string;
@@ -104,7 +95,7 @@ export type StyleEntry = {
 
 const isTextElement = (el: Element) =>
   el.matches(
-    "h1,h2,h3,h4,h5,h6,p,a,dd,dt,li,ol,pre,abbr,cite,dfn,kbd,q,small,input,label,legend,textarea,blockquote,date,button,figcaption,nav,header,footer,em,b,code,mark,time,summary,details",
+    "h1,h2,h3,h4,h5,h6,p,a,dd,dt,li,ol,pre,abbr,cite,dfn,kbd,q,small,input,label,legend,textarea,blockquote,date,button,figcaption,nav,header,footer,em,b,code,mark,time,summary,details"
   );
 
 const isColorProperty = (prop: string) =>
@@ -115,11 +106,9 @@ const isColorProperty = (prop: string) =>
   prop.includes("fill") ||
   prop.includes("stroke");
 
-export const getShadowValues = (shadow: string) =>
-  /([^\)]+\)) ([^\s]+) ([^\s]+) ([^\s]+) ([^\s]+)/.exec(shadow);
+export const getShadowValues = (shadow: string) => /([^)]+\)) ([^\s]+) ([^\s]+) ([^\s]+) ([^\s]+)/.exec(shadow);
 
-export const getTextShadowValues = (shadow: string) =>
-  /([^\)]+\)) ([^\s]+) ([^\s]+) ([^\s]+)/.exec(shadow);
+export const getTextShadowValues = (shadow: string) => /([^)]+\)) ([^\s]+) ([^\s]+) ([^\s]+)/.exec(shadow);
 
 let warnedFontMeasure = false;
 const fontCacheMap = new Map<string, string | undefined>();
@@ -149,9 +138,7 @@ export const firstUsableFontFromFamily = (family: string) => {
     .map((fontName) => {
       const baselineSize = context.measureText("font-test").width;
       context.font = `12px ${fontName}, sans-serif`;
-      return baselineSize !== context.measureText("font-test").width
-        ? fontName
-        : false;
+      return baselineSize !== context.measureText("font-test").width ? fontName : false;
     })
     .filter((value) => value !== false)[0];
 
@@ -192,11 +179,7 @@ export const getStyles = (el: Element): StyleEntry[] => {
       setEntry(prop, String(current));
     }
 
-    if (
-      prop === "borderColor" ||
-      prop === "borderWidth" ||
-      prop === "borderStyle"
-    ) {
+    if (prop === "borderColor" || prop === "borderWidth" || prop === "borderStyle") {
       borders[prop] = String(current).replace(/, rgba/g, "\rrgba");
     }
   });

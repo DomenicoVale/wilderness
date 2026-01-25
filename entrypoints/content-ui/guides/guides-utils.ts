@@ -8,10 +8,7 @@ export const isToolbarElement = (el: Element) => {
   }
 
   const rootNode = el.getRootNode();
-  if (
-    rootNode instanceof ShadowRoot &&
-    rootNode.host?.tagName?.toLowerCase() === TOOLBAR_HOST
-  ) {
+  if (rootNode instanceof ShadowRoot && rootNode.host?.tagName?.toLowerCase() === TOOLBAR_HOST) {
     return true;
   }
 
@@ -19,12 +16,9 @@ export const isToolbarElement = (el: Element) => {
 };
 
 export const isGuidesElement = (el: Element) =>
-  el.closest(
-    "wilderness-guide-box, wilderness-distance, wilderness-gridlines, .wilderness-info-tip, .wilderness-info-outline",
-  );
+  el.closest("wilderness-guide-box, wilderness-distance, wilderness-gridlines, .wilderness-info-tip, .wilderness-info-outline");
 
-export const isGuidesUiElement = (el: Element) =>
-  isToolbarElement(el) || isGuidesElement(el);
+export const isGuidesUiElement = (el: Element) => isToolbarElement(el) || isGuidesElement(el);
 
 export const isOffBounds = (node: DeepTarget | null) => {
   const element = getElementForTarget(node);

@@ -30,13 +30,7 @@ export const createDistance = (): DistanceHandle => {
     parent.append(root);
   }
 
-  const setPosition = ({
-    orientation,
-    distance,
-    x,
-    y,
-    length,
-  }: DistancePosition) => {
+  const setPosition = ({ orientation, distance, x, y, length }: DistancePosition) => {
     root.style.left = `${x}px`;
     root.style.top = `${y}px`;
     label.textContent = `${Math.round(distance)}`;

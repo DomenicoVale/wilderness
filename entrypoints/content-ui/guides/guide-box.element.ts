@@ -7,9 +7,7 @@ type GuideBoxHandle = {
   remove: () => void;
 };
 
-export const createGuideBox = (
-  variant: "selected" | "hover" | "locked",
-): GuideBoxHandle => {
+export const createGuideBox = (variant: "selected" | "hover" | "locked"): GuideBoxHandle => {
   const root = document.createElement("div");
   root.className = "wilderness-guide-box";
   root.setAttribute("data-variant", variant);
@@ -18,12 +16,10 @@ export const createGuideBox = (
   box.className = "wilderness-guide-box__box";
 
   const widthLabel = document.createElement("div");
-  widthLabel.className =
-    "wilderness-guide-box__label wilderness-guide-box__label--width";
+  widthLabel.className = "wilderness-guide-box__label wilderness-guide-box__label--width";
 
   const heightLabel = document.createElement("div");
-  heightLabel.className =
-    "wilderness-guide-box__label wilderness-guide-box__label--height";
+  heightLabel.className = "wilderness-guide-box__label wilderness-guide-box__label--height";
 
   root.append(box, widthLabel, heightLabel);
   root.style.display = "none";

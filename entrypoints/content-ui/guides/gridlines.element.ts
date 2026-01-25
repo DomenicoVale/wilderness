@@ -10,22 +10,10 @@ const createSvg = () => {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.classList.add("wilderness-gridlines__svg");
 
-  const lineLeft = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "line",
-  );
-  const lineRight = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "line",
-  );
-  const lineTop = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "line",
-  );
-  const lineBottom = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "line",
-  );
+  const lineLeft = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  const lineRight = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  const lineTop = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  const lineBottom = document.createElementNS("http://www.w3.org/2000/svg", "line");
 
   svg.append(lineLeft, lineRight, lineTop, lineBottom);
   return { svg, lineLeft, lineRight, lineTop, lineBottom };

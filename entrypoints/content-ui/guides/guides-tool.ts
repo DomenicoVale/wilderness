@@ -1,9 +1,6 @@
-import {
-  getDeepTargetFromPoint,
-  isDeepPickEvent,
-} from "../../../lib/deep-pick";
-import { createGuideBox } from "./guide-box.element";
+import { getDeepTargetFromPoint, isDeepPickEvent } from "../../../lib/deep-pick";
 import { createGridlines } from "./gridlines.element";
+import { createGuideBox } from "./guide-box.element";
 import { ensureGuidesStyles, removeGuidesStyles } from "./guides-styles";
 import { getTargetRect, isGuidesUiElement, isOffBounds } from "./guides-utils";
 import { clearMeasurements, createMeasurements } from "./measurements";
@@ -116,10 +113,7 @@ export const createGuidesController = () => {
 
     state.hovered = next;
 
-    const sameElement =
-      next instanceof Element &&
-      state.selected instanceof Element &&
-      next === state.selected;
+    const sameElement = next instanceof Element && state.selected instanceof Element && next === state.selected;
 
     if (!next || sameElement) {
       hoverBox.hide();
@@ -153,18 +147,11 @@ export const createGuidesController = () => {
       return;
     }
 
-    if (
-      typeof event.clientX !== "number" ||
-      typeof event.clientY !== "number"
-    ) {
+    if (typeof event.clientX !== "number" || typeof event.clientY !== "number") {
       return;
     }
 
-    const target = getDeepTargetFromPoint(
-      event.clientX,
-      event.clientY,
-      isDeepPickEvent(event),
-    );
+    const target = getDeepTargetFromPoint(event.clientX, event.clientY, isDeepPickEvent(event));
     if (isOffBounds(target)) {
       return;
     }
@@ -197,11 +184,7 @@ export const createGuidesController = () => {
       return;
     }
 
-    const target = getDeepTargetFromPoint(
-      event.clientX,
-      event.clientY,
-      isDeepPickEvent(event),
-    );
+    const target = getDeepTargetFromPoint(event.clientX, event.clientY, isDeepPickEvent(event));
     if (isOffBounds(target)) {
       updateHover(null);
       return;
@@ -224,11 +207,7 @@ export const createGuidesController = () => {
     }
 
     const target =
-      event.target instanceof Element
-        ? event.target
-        : event.target instanceof Node
-          ? event.target.parentElement
-          : null;
+      event.target instanceof Element ? event.target : event.target instanceof Node ? event.target.parentElement : null;
 
     if (target && isGuidesUiElement(target)) {
       return;
@@ -318,9 +297,7 @@ export const createGuidesController = () => {
 
   const updateSettings = (next: Partial<GuidesSettings>) => {
     settings.alwaysShowDimensions =
-      typeof next.alwaysShowDimensions === "boolean"
-        ? next.alwaysShowDimensions
-        : settings.alwaysShowDimensions;
+      typeof next.alwaysShowDimensions === "boolean" ? next.alwaysShowDimensions : settings.alwaysShowDimensions;
 
     if (selectedBox) {
       selectedBox.setLabelsVisible(settings.alwaysShowDimensions);

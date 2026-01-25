@@ -1,28 +1,25 @@
-import * as React from "react";
 import { Download, Search, Trash2, X } from "lucide-react";
+import * as React from "react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { ScrollArea } from "../../../components/ui/scroll-area";
-import { cn } from "../../../lib/utils";
 import {
+  type ConsoleEntry,
   clearConsoleEntries,
   downloadConsoleLogs,
   formatArg,
   getConsoleEntries,
   subscribeConsoleStore,
-  type ConsoleEntry,
 } from "../../../lib/console-store";
+import { cn } from "../../../lib/utils";
 
 type ConsolePanelProps = {
   onClose: () => void;
 };
 
 export function ConsolePanel({ onClose }: ConsolePanelProps) {
-  const entries = React.useSyncExternalStore(
-    subscribeConsoleStore,
-    getConsoleEntries,
-  );
+  const entries = React.useSyncExternalStore(subscribeConsoleStore, getConsoleEntries);
   const [filter, setFilter] = React.useState("");
   const viewportRef = React.useRef<HTMLDivElement | null>(null);
   const autoScrollRef = React.useRef(true);
@@ -36,19 +33,15 @@ export function ConsolePanel({ onClose }: ConsolePanelProps) {
       entry.args.some((arg) => {
         const str = formatArg(arg).toLowerCase();
         return str.includes(lowerFilter);
-      }),
+      })
     );
   }, [entries, filter]);
 
-  const handleViewportScroll = React.useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      const target = event.currentTarget;
-      const isAtBottom =
-        target.scrollTop + target.clientHeight >= target.scrollHeight - 4;
-      autoScrollRef.current = isAtBottom;
-    },
-    [],
-  );
+  const handleViewportScroll = React.useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const isAtBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 4;
+    autoScrollRef.current = isAtBottom;
+  }, []);
 
   // Auto-scroll to bottom when new entries arrive unless user paused it.
   React.useLayoutEffect(() => {
@@ -69,17 +62,11 @@ export function ConsolePanel({ onClose }: ConsolePanelProps) {
       <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 p-2">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-neutral-900">Console</h2>
-          <Badge
-            variant="secondary"
-            className="h-5 bg-neutral-200 px-1.5 text-[10px] text-neutral-700 hover:bg-neutral-300"
-          >
+          <Badge variant="secondary" className="h-5 bg-neutral-200 px-1.5 text-[10px] text-neutral-700 hover:bg-neutral-300">
             {entries.length}
           </Badge>
           <div className="relative w-64">
-            <Search
-              className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-neutral-500"
-              aria-hidden="true"
-            />
+            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-neutral-500" aria-hidden="true" />
             <Input
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -124,22 +111,14 @@ export function ConsolePanel({ onClose }: ConsolePanelProps) {
         </div>
       </div>
 
-      <ScrollArea
-        className="flex-1 bg-white"
-        viewportRef={viewportRef}
-        onViewportScroll={handleViewportScroll}
-      >
+      <ScrollArea className="flex-1 bg-white" viewportRef={viewportRef} onViewportScroll={handleViewportScroll}>
         <div className="flex flex-col p-2 font-mono text-xs" role="log">
           {filteredEntries.length === 0 ? (
             <div className="flex h-32 items-center justify-center text-neutral-400 italic">
-              {filter
-                ? "No matching logs found"
-                : "No console logs captured yet"}
+              {filter ? "No matching logs found" : "No console logs captured yet"}
             </div>
           ) : (
-            filteredEntries.map((entry) => (
-              <ConsoleEntryRow key={entry.id} entry={entry} />
-            ))
+            filteredEntries.map((entry) => <ConsoleEntryRow key={entry.id} entry={entry} />)
           )}
         </div>
       </ScrollArea>
@@ -165,12 +144,7 @@ function ConsoleEntryRow({ entry }: { entry: ConsoleEntry }) {
   }[entry.method];
 
   return (
-    <div
-      className={cn(
-        "flex items-start gap-2 rounded-sm border-b border-neutral-100 px-2 py-1.5 last:border-0",
-        bgClass,
-      )}
-    >
+    <div className={cn("flex items-start gap-2 rounded-sm border-b border-neutral-100 px-2 py-1.5 last:border-0", bgClass)}>
       <span className="w-16 shrink-0 select-none text-[10px] text-neutral-400">
         {new Date(entry.timestamp).toLocaleTimeString([], {
           hour12: false,
@@ -179,14 +153,7 @@ function ConsoleEntryRow({ entry }: { entry: ConsoleEntry }) {
           second: "2-digit",
         })}
       </span>
-      <span
-        className={cn(
-          "w-10 shrink-0 text-[10px] font-semibold uppercase",
-          methodColor,
-        )}
-      >
-        {entry.method}
-      </span>
+      <span className={cn("w-10 shrink-0 text-[10px] font-semibold uppercase", methodColor)}>{entry.method}</span>
       <div className="flex-1 break-words whitespace-pre-wrap text-neutral-800">
         {entry.args.map((arg, i) => (
           <span key={i} className="mr-2">

@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Button } from "../../../components/ui/button";
 import {
   DropdownMenu,
@@ -7,7 +6,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
-import { triggerSampleAlert } from "./alert-button";
 
 const MENU_ITEMS = [
   { label: "Inspect styles", value: "inspect" },
@@ -35,9 +33,6 @@ export const MenuButton = () => {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={triggerSampleAlert}>
-          Sample alert
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

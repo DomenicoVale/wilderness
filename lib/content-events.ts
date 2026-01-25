@@ -1,15 +1,7 @@
-import {
-  createGuidesController,
-  type GuidesSettings,
-} from "../entrypoints/content-ui/guides/guides-tool";
-import { createInfoController } from "../entrypoints/content-ui/info/info-tool";
+import type { createGuidesController, GuidesSettings } from "../entrypoints/content-ui/guides/guides-tool";
+import type { createInfoController } from "../entrypoints/content-ui/info/info-tool";
 import { setToolState } from "../entrypoints/content-ui/tool-state";
-import {
-  GUIDES_SETTINGS_EVENT,
-  TOGGLE_CONSOLE_EVENT,
-  TOGGLE_GUIDES_EVENT,
-  TOGGLE_INFO_EVENT,
-} from "./events";
+import { GUIDES_SETTINGS_EVENT, TOGGLE_CONSOLE_EVENT, TOGGLE_GUIDES_EVENT, TOGGLE_INFO_EVENT } from "./events";
 
 type GuidesController = ReturnType<typeof createGuidesController>;
 type InfoController = ReturnType<typeof createInfoController>;
@@ -72,8 +64,7 @@ export const createContentEventHandlers = ({
 }: ContentEventDeps): Record<string, (event: Event) => void> => ({
   [TOGGLE_GUIDES_EVENT]: (event) => {
     const detail = event instanceof CustomEvent ? event.detail : null;
-    const enabled =
-      typeof detail?.enabled === "boolean" ? detail.enabled : undefined;
+    const enabled = typeof detail?.enabled === "boolean" ? detail.enabled : undefined;
 
     const controller = ensureGuidesController();
     const next = controller.toggle(enabled);
@@ -98,8 +89,7 @@ export const createContentEventHandlers = ({
 
   [TOGGLE_INFO_EVENT]: (event) => {
     const detail = event instanceof CustomEvent ? event.detail : null;
-    const enabled =
-      typeof detail?.enabled === "boolean" ? detail.enabled : undefined;
+    const enabled = typeof detail?.enabled === "boolean" ? detail.enabled : undefined;
 
     const controller = ensureInfoController();
     const next = controller.toggle(enabled);

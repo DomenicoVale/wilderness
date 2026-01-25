@@ -1,4 +1,5 @@
 import { TOGGLE_UI_MESSAGE } from "../lib/events";
+
 const CONTENT_SCRIPT_FILE = "content-scripts/content.js";
 const CONSOLE_INTERCEPTOR_FILE = "console-interceptor.js";
 
@@ -11,14 +12,9 @@ const enabledTabs = new Set<number>();
 const registerConsoleInterceptor = async () => {
   try {
     // Unregister first in case it already exists (during extension reload)
-    await browser.scripting
-      .unregisterContentScripts({ ids: ["wilderness-console-interceptor"] })
-      .catch((error) => {
-        console.warn(
-          "[wilderness] Failed to unregister console interceptor.",
-          error,
-        );
-      });
+    await browser.scripting.unregisterContentScripts({ ids: ["wilderness-console-interceptor"] }).catch((error) => {
+      console.warn("[wilderness] Failed to unregister console interceptor.", error);
+    });
 
     await browser.scripting.registerContentScripts([
       {

@@ -5,11 +5,7 @@ export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   vite: () => ({
     optimizeDeps: {
-      entries: [
-        "entrypoints/**/*.{ts,tsx,html}",
-        "components/**/*.{ts,tsx}",
-        "lib/**/*.{ts,tsx}",
-      ],
+      entries: ["entrypoints/**/*.{ts,tsx,html}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
     },
   }),
   manifest: {

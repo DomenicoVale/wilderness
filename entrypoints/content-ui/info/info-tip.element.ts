@@ -20,9 +20,7 @@ export type InfoTipContent = {
 const formatTagLabel = (el: Element) => {
   const tag = el.tagName.toLowerCase();
   const id = el.id ? `#${el.id}` : "";
-  const classes = el.classList.length
-    ? `.${Array.from(el.classList).join(".")}`
-    : "";
+  const classes = el.classList.length ? `.${Array.from(el.classList).join(".")}` : "";
 
   return { tag, id, classes };
 };

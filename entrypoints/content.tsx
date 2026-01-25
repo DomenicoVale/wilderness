@@ -1,18 +1,17 @@
 /// <reference path="../.wxt/wxt.d.ts" />
 
 import { createRoot } from "react-dom/client";
+import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
+import { createContentEventHandlers } from "../lib/content-events";
+import { TOGGLE_UI_MESSAGE } from "../lib/events";
 import { ContentToolbar } from "./content-ui/content-toolbar";
 import { createGuidesController } from "./content-ui/guides/guides-tool";
 import { createInfoController } from "./content-ui/info/info-tool";
 import { getToolState, setToolState } from "./content-ui/tool-state";
-import { createContentEventHandlers } from "../lib/content-events";
-import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
-import { TOGGLE_UI_MESSAGE } from "../lib/events";
 import "./content-ui/style.css";
 type ContentScriptContextType = InstanceType<typeof ContentScriptContext>;
 
-let contentUi: ShadowRootContentScriptUi<ReturnType<typeof createRoot>> | null =
-  null;
+let contentUi: ShadowRootContentScriptUi<ReturnType<typeof createRoot>> | null = null;
 let isMounted = false;
 let guidesController: ReturnType<typeof createGuidesController> | null = null;
 let infoController: ReturnType<typeof createInfoController> | null = null;

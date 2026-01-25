@@ -1,17 +1,7 @@
-import {
-  getDeepTargetFromPoint,
-  getElementForTarget,
-  getTargetRect,
-  isDeepPickEvent,
-} from "../../../lib/deep-pick";
-import { createInfoTip, type InfoTipContent } from "./info-tip.element";
+import { getDeepTargetFromPoint, getElementForTarget, getTargetRect, isDeepPickEvent } from "../../../lib/deep-pick";
 import { ensureInfoStyles, removeInfoStyles } from "./info-styles";
-import {
-  getStyles,
-  isInfoUiElement,
-  isOffBounds,
-  observeRemoval,
-} from "./info-utils";
+import { createInfoTip, type InfoTipContent } from "./info-tip.element";
+import { getStyles, isInfoUiElement, isOffBounds, observeRemoval } from "./info-utils";
 
 const MOUSE_BLOCK_EVENTS: Array<keyof WindowEventMap> = [
   "click",
@@ -48,10 +38,7 @@ const buildContent = (target: Element): InfoTipContent => {
   };
 };
 
-const getTipPosition = (
-  tip: ReturnType<typeof createInfoTip>,
-  event: MouseEvent,
-) => {
+const getTipPosition = (tip: ReturnType<typeof createInfoTip>, event: MouseEvent) => {
   const tipRect = tip.root.getBoundingClientRect();
   const north = event.clientY > window.innerHeight / 2;
   const west = event.clientX > window.innerWidth / 2;
@@ -146,11 +133,7 @@ export const createInfoController = () => {
     state.active.target = target;
   };
 
-  const pinTip = (
-    target: Element,
-    event: MouseEvent,
-    deepTarget: Element | Range,
-  ) => {
+  const pinTip = (target: Element, event: MouseEvent, deepTarget: Element | Range) => {
     if (state.pinned.has(target)) {
       return;
     }
@@ -200,11 +183,7 @@ export const createInfoController = () => {
       return;
     }
 
-    const target = getDeepTargetFromPoint(
-      event.clientX,
-      event.clientY,
-      isDeepPickEvent(event),
-    );
+    const target = getDeepTargetFromPoint(event.clientX, event.clientY, isDeepPickEvent(event));
     const element = getElementForTarget(target);
     if (!element || !target || isOffBounds(target)) {
       clearActive();
@@ -225,11 +204,7 @@ export const createInfoController = () => {
       return;
     }
 
-    const target = getDeepTargetFromPoint(
-      event.clientX,
-      event.clientY,
-      isDeepPickEvent(event),
-    );
+    const target = getDeepTargetFromPoint(event.clientX, event.clientY, isDeepPickEvent(event));
     const element = getElementForTarget(target);
     if (!element || !target || isOffBounds(target)) {
       return;
@@ -255,11 +230,7 @@ export const createInfoController = () => {
     }
 
     const target =
-      event.target instanceof Element
-        ? event.target
-        : event.target instanceof Node
-          ? event.target.parentElement
-          : null;
+      event.target instanceof Element ? event.target : event.target instanceof Node ? event.target.parentElement : null;
 
     if (target && isInfoUiElement(target)) {
       return;

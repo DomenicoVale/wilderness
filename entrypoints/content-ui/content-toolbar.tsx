@@ -1,31 +1,17 @@
 import * as React from "react";
+import { getConsoleCount, subscribeConsoleStore } from "../../lib/console-store";
 import { GUIDES_SETTINGS_EVENT } from "../../lib/events";
-import {
-  getConsoleCount,
-  subscribeConsoleStore,
-} from "../../lib/console-store";
-import { getToolState, setToolState, subscribeToolState } from "./tool-state";
 import { ConsolePanel } from "./console/console-panel";
-import { AlertButton } from "./toolbar/alert-button";
+import { getToolState, setToolState, subscribeToolState } from "./tool-state";
 import { ConsoleToggleButton } from "./toolbar/console-toggle-button";
 import { GuidesSettingsButton } from "./toolbar/guides-settings-button";
-import {
-  GuidesToggleButton,
-  type GuidesSettings,
-} from "./toolbar/guides-toggle-button";
+import { type GuidesSettings, GuidesToggleButton } from "./toolbar/guides-toggle-button";
 import { InfoToggleButton } from "./toolbar/info-toggle-button";
 import { MenuButton } from "./toolbar/menu-button";
-import { WelcomeMessage } from "./toolbar/welcome-message";
 
 export function ContentToolbar() {
-  const toolState = React.useSyncExternalStore(
-    subscribeToolState,
-    getToolState,
-  );
-  const consoleCount = React.useSyncExternalStore(
-    subscribeConsoleStore,
-    getConsoleCount,
-  );
+  const toolState = React.useSyncExternalStore(subscribeToolState, getToolState);
+  const consoleCount = React.useSyncExternalStore(subscribeConsoleStore, getConsoleCount);
   const [guidesSettings, setGuidesSettings] = React.useState<GuidesSettings>({
     alwaysShowDimensions: false,
   });
@@ -39,15 +25,13 @@ export function ContentToolbar() {
     window.dispatchEvent(
       new CustomEvent(GUIDES_SETTINGS_EVENT, {
         detail: next,
-      }),
+      })
     );
   };
 
   return (
     <>
-      {toolState.consolePanelOpen ? (
-        <ConsolePanel onClose={handleConsoleClose} />
-      ) : null}
+      {toolState.consolePanelOpen ? <ConsolePanel onClose={handleConsoleClose} /> : null}
       <div className="fixed bottom-6 left-1/2 z-[2147483647] -translate-x-1/2">
         <div className="relative flex flex-col items-center">
           {toolState.guidesEnabled ? (
@@ -58,8 +42,7 @@ export function ContentToolbar() {
                   onToggle={() =>
                     updateGuidesSettings({
                       ...guidesSettings,
-                      alwaysShowDimensions:
-                        !guidesSettings.alwaysShowDimensions,
+                      alwaysShowDimensions: !guidesSettings.alwaysShowDimensions,
                     })
                   }
                 />
@@ -67,18 +50,10 @@ export function ContentToolbar() {
             </div>
           ) : null}
           <div className="flex items-center gap-3 rounded-full border border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur">
-            <GuidesToggleButton
-              enabled={toolState.guidesEnabled}
-              settings={guidesSettings}
-            />
-            <InfoToggleButton enabled={toolState.infoEnabled} />
-            <ConsoleToggleButton
-              isOpen={toolState.consolePanelOpen}
-              count={consoleCount}
-            />
             <MenuButton />
-            <WelcomeMessage />
-            <AlertButton />
+            <GuidesToggleButton enabled={toolState.guidesEnabled} settings={guidesSettings} />
+            <InfoToggleButton enabled={toolState.infoEnabled} />
+            <ConsoleToggleButton isOpen={toolState.consolePanelOpen} count={consoleCount} />
           </div>
         </div>
       </div>

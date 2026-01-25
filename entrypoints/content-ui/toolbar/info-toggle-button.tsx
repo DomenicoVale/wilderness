@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "../../../components/ui/button";
-import { cn } from "../../../lib/utils";
 import { TOGGLE_INFO_EVENT } from "../../../lib/events";
+import { cn } from "../../../lib/utils";
 import { setToolState } from "../tool-state";
 
 type InfoToggleButtonProps = {
@@ -15,7 +15,7 @@ export const InfoToggleButton = ({ enabled }: InfoToggleButtonProps) => {
     window.dispatchEvent(
       new CustomEvent(TOGGLE_INFO_EVENT, {
         detail: { enabled: next },
-      }),
+      })
     );
   };
 
@@ -26,9 +26,7 @@ export const InfoToggleButton = ({ enabled }: InfoToggleButtonProps) => {
       onClick={handleToggle}
       aria-pressed={enabled}
       aria-label="Toggle info inspector"
-      className={cn(
-        enabled && "bg-primary text-primary-foreground hover:bg-primary/90",
-      )}
+      className={cn(enabled && "bg-primary text-primary-foreground hover:bg-primary/90")}
     >
       Info
     </Button>

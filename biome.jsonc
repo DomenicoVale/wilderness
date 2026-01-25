@@ -1,0 +1,78 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["**/*.{ts,js,tsx,jsx,mjs,css,json,jsonc,md,mdx,gql,graphql}", "!**/node_modules"]
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "lineWidth": 130,
+    "indentWidth": 2,
+    "indentStyle": "space"
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "jsxQuoteStyle": "double",
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "es5"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "security": {
+        "recommended": true
+      },
+      "a11y": {
+        "recommended": true
+      },
+      "complexity": {
+        "recommended": true
+      },
+      "correctness": {
+        "recommended": true,
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "noUndeclaredVariables": "error"
+      },
+      "performance": {
+        "recommended": true
+      },
+      "suspicious": {
+        "recommended": true,
+        "noConsole": {
+          "level": "warn",
+          "fix": "none",
+          // Using specific console methods means they were added on purpose.
+          "options": { "allow": ["error", "warn", "info"] }
+        }
+      },
+      "nursery": {
+        "recommended": true
+      },
+      "style": {
+        "recommended": true
+      }
+    }
+  }
+}
