@@ -18,6 +18,7 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 ## Behavior
 - The toolbar only mounts after the user clicks the extension action.
 - The content script is injected into the active tab on click.
+- Enabled origins keep the toolbar mounted across reloads and tab switches.
 - Menu items log to the console as placeholders for future tools.
 - The sample button triggers a simple `window.alert`.
 - The Guides button toggles a ruler mode that measures elements and distances.
@@ -25,3 +26,9 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - Guides blocks page mouse handlers while active.
 - The Info button toggles an inspector tooltip for styles.
 - Hovering an element in Guides mode shows full-edge dotted guides.
+- Custom tools are selectable from a button-styled dropdown in the toolbar.
+
+## Custom Tools Editor
+- The custom tools editor opens in a new extension tab.
+- Monaco editor provides JavaScript editing with formatting and validation actions.
+- The right-side panel reserves 30% width for future AI assistance.

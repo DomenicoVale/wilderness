@@ -1,3 +1,4 @@
+import { viteStaticCopy } from "vite-plugin-static-copy";
 import { defineConfig } from "wxt";
 
 // See https://wxt.dev/api/config.html
@@ -7,6 +8,16 @@ export default defineConfig({
     optimizeDeps: {
       entries: ["entrypoints/**/*.{ts,tsx,html}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
     },
+    plugins: [
+      viteStaticCopy({
+        targets: [
+          {
+            src: "node_modules/monaco-editor/min/vs/**/*",
+            dest: "monaco/vs",
+          },
+        ],
+      }),
+    ],
   }),
   webExt: {
     startUrls: ["https://www.google.com"],
@@ -15,7 +26,7 @@ export default defineConfig({
     action: {
       default_title: "wilderness",
     },
-    permissions: ["scripting"],
+    permissions: ["scripting", "storage", "tabs"],
     host_permissions: ["<all_urls>"],
   },
 });

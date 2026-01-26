@@ -4,6 +4,7 @@ import { GUIDES_SETTINGS_EVENT } from "../../lib/events";
 import { ConsolePanel } from "./console/console-panel";
 import { getToolState, setToolState, subscribeToolState } from "./tool-state";
 import { ConsoleToggleButton } from "./toolbar/console-toggle-button";
+import { CustomToolsButton } from "./toolbar/custom-tools-button";
 import { GuidesSettingsButton } from "./toolbar/guides-settings-button";
 import { type GuidesSettings, GuidesToggleButton } from "./toolbar/guides-toggle-button";
 import { InfoToggleButton } from "./toolbar/info-toggle-button";
@@ -51,6 +52,7 @@ export function ContentToolbar() {
           ) : null}
           <div className="flex items-center gap-3 rounded-full border border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur">
             <MenuButton />
+            <CustomToolsButton />
             <GuidesToggleButton enabled={toolState.guidesEnabled} settings={guidesSettings} />
             <InfoToggleButton enabled={toolState.infoEnabled} />
             <ConsoleToggleButton isOpen={toolState.consolePanelOpen} count={consoleCount} />

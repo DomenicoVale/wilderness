@@ -3,7 +3,9 @@
 import { createRoot } from "react-dom/client";
 import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
 import { createContentEventHandlers } from "../lib/content-events";
-import { TOGGLE_UI_MESSAGE } from "../lib/events";
+import { runCustomTool } from "../lib/custom-tools-runner";
+import { ensureCustomToolsStore, getActiveCustomTool, waitForCustomToolsReady } from "../lib/custom-tools-store";
+import { SET_UI_MESSAGE } from "../lib/events";
 import { ContentToolbar } from "./content-ui/content-toolbar";
 import { createGuidesController } from "./content-ui/guides/guides-tool";
 import { createInfoController } from "./content-ui/info/info-tool";
@@ -72,6 +74,26 @@ const handleConsoleMessage = (event: MessageEvent) => {
   addConsoleEntry(event.data);
 };
 
+const ensureBody = async () => {
+  if (document.body) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const observer = new MutationObserver(() => {
+      if (!document.body) {
+        return;
+      }
+
+      observer.disconnect();
+      resolve();
+    });
+
+    const target = document.documentElement ?? document;
+    observer.observe(target, { childList: true, subtree: true });
+  });
+};
+
 const ensureUi = async (ctx: ContentScriptContextType) => {
   if (contentUi) {
     return contentUi;
@@ -107,6 +129,7 @@ const mountUi = async (ctx: ContentScriptContextType) => {
     return;
   }
 
+  await ensureBody();
   const ui = await ensureUi(ctx);
   ui.mount();
   isMounted = true;
@@ -125,19 +148,27 @@ const unmountUi = () => {
 export default defineContentScript({
   matches: ["<all_urls>"],
   cssInjectionMode: "ui",
+  runAt: "document_start",
   registration: "runtime",
   async main(ctx) {
+    ensureCustomToolsStore();
+
     browser.runtime.onMessage.addListener((message) => {
-      if (message?.type !== TOGGLE_UI_MESSAGE) {
+      if (message?.type !== SET_UI_MESSAGE) {
         return;
       }
 
-      if (isMounted) {
-        unmountUi();
+      if (typeof message.enabled !== "boolean") {
+        console.warn("[wilderness] Missing enabled flag for UI message.");
         return;
       }
 
-      void mountUi(ctx);
+      if (message.enabled) {
+        void mountUi(ctx);
+        return;
+      }
+
+      unmountUi();
     });
 
     const eventHandlers = createContentEventHandlers({
@@ -156,5 +187,21 @@ export default defineContentScript({
 
     // Listen for console messages from the MAIN world interceptor
     window.addEventListener("message", handleConsoleMessage);
+
+    const runActiveToolOnLoad = async () => {
+      const snapshot = await waitForCustomToolsReady();
+      if (snapshot.status !== "ready") {
+        return;
+      }
+
+      const activeTool = getActiveCustomTool();
+      if (!activeTool || activeTool.mode !== "on-load") {
+        return;
+      }
+
+      await runCustomTool({ tool: activeTool, reason: "load" });
+    };
+
+    void runActiveToolOnLoad();
   },
 });
