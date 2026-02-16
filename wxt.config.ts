@@ -4,6 +4,11 @@ import { defineConfig } from "wxt";
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
+  dev: {
+    server: {
+      port: Number(process.env.WXT_DEV_PORT ?? "3000"),
+    },
+  },
   vite: () => ({
     optimizeDeps: {
       entries: ["entrypoints/**/*.{ts,tsx,html}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
@@ -26,7 +31,7 @@ export default defineConfig({
     action: {
       default_title: "wilderness",
     },
-    permissions: ["scripting", "storage", "tabs"],
+    permissions: ["activeTab", "scripting", "storage", "tabs", "userScripts"],
     host_permissions: ["<all_urls>"],
   },
 });

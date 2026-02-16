@@ -13,8 +13,10 @@
 ## Activation
 - The background script listens for the extension action click.
 - The content script is injected into the active tab on click.
+- `activeTab` permission allows click-to-inject even when site access is restricted.
 - Enabling the extension persists per-origin and re-injects on tab switches or reloads.
 - The content UI mounts after receiving the explicit enable/disable message.
+- Unsupported pages (non-HTTP(S) or blocked contexts) show an action badge warning.
 
 ## Guides Tool
 - Guides runs in the content script and renders overlays into the page DOM.
@@ -26,6 +28,10 @@
 
 ## Custom Tools
 - Custom tools are stored in extension storage with an active tool selection.
+- Custom tools execute through the background worker using `browser.userScripts.execute`.
+- Execution tries `MAIN` first, then falls back to `USER_SCRIPT` when needed.
+- The fallback avoids page CSP `unsafe-eval` restrictions while keeping tool execution available.
+- On browsers without `userScripts.execute`, execution falls back to `browser.scripting.executeScript` in `MAIN` world.
 - On-load tools run automatically when the content script starts for enabled origins.
 
 ## Future Backend

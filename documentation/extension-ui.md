@@ -18,6 +18,7 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 ## Behavior
 - The toolbar only mounts after the user clicks the extension action.
 - The content script is injected into the active tab on click.
+- If injection fails (unsupported page or blocked access), the action icon shows a warning badge.
 - Enabled origins keep the toolbar mounted across reloads and tab switches.
 - Menu items log to the console as placeholders for future tools.
 - The sample button triggers a simple `window.alert`.
@@ -27,8 +28,11 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - The Info button toggles an inspector tooltip for styles.
 - Hovering an element in Guides mode shows full-edge dotted guides.
 - Custom tools are selectable from a button-styled dropdown in the toolbar.
+- Custom tool code is executed by the background worker through `userScripts` when available.
+- Browsers without `userScripts` run custom tools through `browser.scripting.executeScript` in `MAIN` world.
 
 ## Custom Tools Editor
 - The custom tools editor opens in a new extension tab.
 - Monaco editor provides JavaScript editing with formatting and validation actions.
+- Validation checks syntax via parser tooling (not `eval` / `new Function`).
 - The right-side panel reserves 30% width for future AI assistance.

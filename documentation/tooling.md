@@ -9,3 +9,7 @@
 ## Styling
 - Tailwind is configured in `tailwind.config.js`.
 - PostCSS plugins live in `postcss.config.cjs`.
+
+## Dev Server Port
+- WXT dev server defaults to port `3000`.
+- Override locally with `WXT_DEV_PORT` (example: `WXT_DEV_PORT=3002 npm run dev`).

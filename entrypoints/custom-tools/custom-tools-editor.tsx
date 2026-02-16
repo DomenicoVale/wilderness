@@ -1,5 +1,6 @@
 import MonacoEditor, { loader, type Monaco } from "@monaco-editor/react";
-import * as prettierBabel from "prettier/parser-babel";
+import * as prettierBabel from "prettier/plugins/babel";
+import * as prettierEstree from "prettier/plugins/estree";
 import * as prettier from "prettier/standalone";
 import * as React from "react";
 import { Button } from "../../components/ui/button";
@@ -15,6 +16,7 @@ type ValidationState = {
 const DEFAULT_CODE = `// New custom tool
 console.log("It works!");
 `;
+const PRETTIER_PLUGINS = [prettierBabel, prettierEstree];
 
 const monacoBaseUrl = browser.runtime.getURL("/custom-tools.html").replace("custom-tools.html", "monaco/vs");
 loader.config({ paths: { vs: monacoBaseUrl } });
@@ -45,7 +47,7 @@ export const CustomToolsEditor = () => {
     try {
       const formatted = await prettier.format(code, {
         parser: "babel",
-        plugins: [prettierBabel],
+        plugins: PRETTIER_PLUGINS,
         semi: true,
         singleQuote: false,
         trailingComma: "es5",
@@ -58,9 +60,16 @@ export const CustomToolsEditor = () => {
     }
   };
 
-  const handleValidate = () => {
+  const validateCodeSyntax = async () => {
+    await prettier.format(code, {
+      parser: "babel",
+      plugins: PRETTIER_PLUGINS,
+    });
+  };
+
+  const handleValidate = async () => {
     try {
-      new Function(code);
+      await validateCodeSyntax();
       setValidation({ status: "valid", message: "No validation issues detected." });
     } catch (error) {
       console.warn("[wilderness] Custom tool validation failed.", error);
@@ -77,6 +86,15 @@ export const CustomToolsEditor = () => {
 
     if (!code.trim()) {
       setValidation({ status: "error", message: "Add code before saving." });
+      return;
+    }
+
+    try {
+      await validateCodeSyntax();
+    } catch (error) {
+      console.warn("[wilderness] Custom tool validation failed during save.", error);
+      const message = error instanceof Error ? error.message : "Validation failed.";
+      setValidation({ status: "error", message });
       return;
     }
 
