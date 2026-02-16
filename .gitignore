@@ -25,3 +25,5 @@ ProjectVisBug
 *.njsproj
 *.sln
 *.sw?
+
+.env
