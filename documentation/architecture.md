@@ -27,12 +27,12 @@
 - Tips show computed styles and can be pinned per element.
 
 ## Custom Tools
-- Custom tools are stored in extension storage with an active tool selection.
+- Custom tools are stored in extension storage with an active tool set (`activeToolIds`).
 - Custom tools execute through the background worker using `browser.userScripts.execute`.
 - Execution tries `MAIN` first, then falls back to `USER_SCRIPT` when needed.
 - The fallback avoids page CSP `unsafe-eval` restrictions while keeping tool execution available.
 - On browsers without `userScripts.execute`, execution falls back to `browser.scripting.executeScript` in `MAIN` world.
-- On-load tools run automatically when the content script starts for enabled origins.
+- All active on-load tools run automatically when the content script starts for enabled origins.
 
 ## Future Backend
 We plan to add an Express.js backend later and will migrate to a monorepo layout when that work begins. Until then, the extension remains a single-package repo.

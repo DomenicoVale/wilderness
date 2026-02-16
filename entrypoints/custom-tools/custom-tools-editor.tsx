@@ -5,7 +5,7 @@ import * as prettier from "prettier/standalone";
 import * as React from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { addCustomTool, setActiveCustomToolId } from "../../lib/custom-tools-store";
+import { addCustomTool, toggleActiveCustomToolId } from "../../lib/custom-tools-store";
 import "monaco-editor/min/vs/editor/editor.main.css";
 
 type ValidationState = {
@@ -100,7 +100,7 @@ export const CustomToolsEditor = () => {
 
     try {
       const tool = await addCustomTool({ name, code, mode });
-      await setActiveCustomToolId(tool.id);
+      await toggleActiveCustomToolId(tool.id, true);
       window.close();
     } catch (error) {
       console.warn("[wilderness] Unable to save custom tool.", error);

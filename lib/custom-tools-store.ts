@@ -14,7 +14,7 @@ export type CustomTool = {
 
 type StoredCustomToolsState = {
   tools: CustomTool[];
-  activeToolId: string | null;
+  activeToolIds: string[];
 };
 
 type CustomToolsSnapshot = StoredCustomToolsState & {
@@ -28,7 +28,7 @@ let initialized = false;
 const initialState: CustomToolsSnapshot = {
   status: "idle",
   tools: [],
-  activeToolId: null,
+  activeToolIds: [],
 };
 
 const store = createStore<CustomToolsSnapshot>(() => initialState);
@@ -39,9 +39,16 @@ const updateState = (next: Partial<CustomToolsSnapshot>) => {
 
 const getState = () => store.getState();
 
+const dedupe = (values: string[]) => Array.from(new Set(values));
+
+const normalizeActiveToolIds = (activeToolIds: string[], tools: CustomTool[]) => {
+  const toolIds = new Set(tools.map((tool) => tool.id));
+  return dedupe(activeToolIds).filter((toolId) => toolIds.has(toolId));
+};
+
 const toStoredState = (value: unknown): StoredCustomToolsState => {
   if (!value || typeof value !== "object") {
-    return { tools: [], activeToolId: null };
+    return { tools: [], activeToolIds: [] };
   }
 
   const record = value as Record<string, unknown>;
@@ -70,8 +77,16 @@ const toStoredState = (value: unknown): StoredCustomToolsState => {
         .filter((tool): tool is CustomTool => Boolean(tool))
     : [];
 
-  const activeToolId = typeof record.activeToolId === "string" ? record.activeToolId : null;
-  return { tools, activeToolId };
+  const activeToolIds = Array.isArray(record.activeToolIds)
+    ? record.activeToolIds.filter((item): item is string => typeof item === "string")
+    : typeof record.activeToolId === "string"
+      ? [record.activeToolId]
+      : [];
+
+  return {
+    tools,
+    activeToolIds: normalizeActiveToolIds(activeToolIds, tools),
+  };
 };
 
 const persistStoredState = async (next: StoredCustomToolsState) => {
@@ -172,26 +187,48 @@ export const addCustomTool = async ({ name, code, mode }: { name: string; code: 
 
   const next = {
     tools: [...getState().tools, tool],
-    activeToolId: getState().activeToolId,
+    activeToolIds: getState().activeToolIds,
   };
 
   await persistStoredState(next);
   return tool;
 };
 
-export const setActiveCustomToolId = async (toolId: string | null) => {
+export const setActiveCustomToolIds = async (toolIds: string[]) => {
   await ensureReady();
+  const nextActiveToolIds = normalizeActiveToolIds(toolIds, getState().tools);
   const next: StoredCustomToolsState = {
     tools: getState().tools,
-    activeToolId: toolId,
+    activeToolIds: nextActiveToolIds,
   };
   await persistStoredState(next);
 };
 
-export const getActiveCustomTool = () => {
-  if (!getState().activeToolId) {
-    return null;
+export const toggleActiveCustomToolId = async (toolId: string, forceEnabled?: boolean) => {
+  await ensureReady();
+  const tools = getState().tools;
+  if (!tools.some((tool) => tool.id === toolId)) {
+    console.warn("[wilderness] Unable to toggle unknown custom tool.", toolId);
+    return false;
   }
 
-  return getState().tools.find((tool) => tool.id === getState().activeToolId) ?? null;
+  const activeSet = new Set(getState().activeToolIds);
+  const isActive = activeSet.has(toolId);
+  const shouldEnable = typeof forceEnabled === "boolean" ? forceEnabled : !isActive;
+
+  if (shouldEnable) {
+    activeSet.add(toolId);
+  } else {
+    activeSet.delete(toolId);
+  }
+
+  await setActiveCustomToolIds(Array.from(activeSet));
+  return shouldEnable;
+};
+
+export const getActiveCustomTools = () => {
+  const toolsById = new Map(getState().tools.map((tool) => [tool.id, tool]));
+  return getState()
+    .activeToolIds.map((toolId) => toolsById.get(toolId))
+    .filter((tool): tool is CustomTool => Boolean(tool));
 };

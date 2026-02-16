@@ -1,7 +1,8 @@
+import { Ruler } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { GUIDES_SETTINGS_EVENT, TOGGLE_GUIDES_EVENT } from "../../../lib/events";
-import { cn } from "../../../lib/utils";
 import { setToolState } from "../tool-state";
+import { getToolbarButtonClassName, toolbarIconClassName } from "./toolbar-button-styles";
 export type GuidesSettings = {
   alwaysShowDimensions: boolean;
 };
@@ -9,9 +10,11 @@ export type GuidesSettings = {
 type GuidesToggleButtonProps = {
   enabled: boolean;
   settings: GuidesSettings;
+  onHoverWhileActive?: () => void;
+  buttonRef?: React.Ref<HTMLButtonElement>;
 };
 
-export const GuidesToggleButton = ({ enabled, settings }: GuidesToggleButtonProps) => {
+export const GuidesToggleButton = ({ enabled, settings, onHoverWhileActive, buttonRef }: GuidesToggleButtonProps) => {
   const handleToggle = () => {
     const next = !enabled;
     setToolState({ guidesEnabled: next });
@@ -33,14 +36,23 @@ export const GuidesToggleButton = ({ enabled, settings }: GuidesToggleButtonProp
 
   return (
     <Button
+      ref={buttonRef}
       size="sm"
       variant="secondary"
       onClick={handleToggle}
+      onMouseEnter={() => {
+        if (!enabled) {
+          return;
+        }
+
+        onHoverWhileActive?.();
+      }}
       aria-pressed={enabled}
       aria-label="Toggle guides ruler"
-      className={cn(enabled && "bg-primary text-primary-foreground hover:bg-primary/90")}
+      className={getToolbarButtonClassName(enabled)}
     >
-      Guides
+      <Ruler className={toolbarIconClassName} aria-hidden="true" />
+      <span>Guides</span>
     </Button>
   );
 };

@@ -1,3 +1,4 @@
+import { PanelTop } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import {
   DropdownMenu,
@@ -6,6 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
+import { getToolbarButtonClassName, toolbarIconClassName } from "./toolbar-button-styles";
 
 const MENU_ITEMS = [
   { label: "Inspect styles", value: "inspect" },
@@ -17,11 +19,12 @@ export const MenuButton = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="secondary" aria-label="Open tools menu">
-          Menu
+        <Button size="sm" variant="secondary" aria-label="Open tools menu" className={getToolbarButtonClassName()}>
+          <PanelTop className={toolbarIconClassName} aria-hidden="true" />
+          <span>Menu</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48">
+      <DropdownMenuContent align="start" side="top" sideOffset={10} className="w-56">
         {MENU_ITEMS.map((item) => (
           <DropdownMenuItem
             key={item.value}

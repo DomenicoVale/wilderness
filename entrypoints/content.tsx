@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
 import { createContentEventHandlers } from "../lib/content-events";
 import { runCustomTool } from "../lib/custom-tools-runner";
-import { ensureCustomToolsStore, getActiveCustomTool, waitForCustomToolsReady } from "../lib/custom-tools-store";
+import { ensureCustomToolsStore, getActiveCustomTools, waitForCustomToolsReady } from "../lib/custom-tools-store";
 import { SET_UI_MESSAGE } from "../lib/events";
 import { ContentToolbar } from "./content-ui/content-toolbar";
 import { createGuidesController } from "./content-ui/guides/guides-tool";
@@ -12,6 +12,7 @@ import { createInfoController } from "./content-ui/info/info-tool";
 import { getToolState, setToolState } from "./content-ui/tool-state";
 import "./content-ui/style.css";
 type ContentScriptContextType = InstanceType<typeof ContentScriptContext>;
+const CONTENT_SCRIPT_SINGLETON_KEY = "__wilderness_content_singleton__";
 
 let contentUi: ShadowRootContentScriptUi<ReturnType<typeof createRoot>> | null = null;
 let isMounted = false;
@@ -151,6 +152,16 @@ export default defineContentScript({
   runAt: "document_start",
   registration: "runtime",
   async main(ctx) {
+    const contentGlobal = globalThis as typeof globalThis & {
+      [CONTENT_SCRIPT_SINGLETON_KEY]?: boolean;
+    };
+
+    if (contentGlobal[CONTENT_SCRIPT_SINGLETON_KEY]) {
+      console.warn("[wilderness] Duplicate content script injection ignored.");
+      return;
+    }
+    contentGlobal[CONTENT_SCRIPT_SINGLETON_KEY] = true;
+
     ensureCustomToolsStore();
 
     browser.runtime.onMessage.addListener((message) => {
@@ -194,12 +205,14 @@ export default defineContentScript({
         return;
       }
 
-      const activeTool = getActiveCustomTool();
-      if (!activeTool || activeTool.mode !== "on-load") {
+      const activeTools = getActiveCustomTools().filter((tool) => tool.mode === "on-load");
+      if (activeTools.length === 0) {
         return;
       }
 
-      await runCustomTool({ tool: activeTool, reason: "load" });
+      for (const tool of activeTools) {
+        await runCustomTool({ tool, reason: "load" });
+      }
     };
 
     void runActiveToolOnLoad();

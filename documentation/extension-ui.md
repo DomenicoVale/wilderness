@@ -15,6 +15,13 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - shadcn-style UI primitives in `components/ui/`.
 - Tailwind for layout and styling around the UI primitives.
 
+## Rendering Boundaries
+- `entrypoints/content.tsx` + `entrypoints/content-ui/**`: React UI rendered in a shadow root (toolbar, dropdowns, console panel).
+- `entrypoints/content-ui/guides/**`: DOM-driven overlays/custom elements with direct style injection.
+- `entrypoints/content-ui/info/**`: DOM-driven inspection tips with direct style injection.
+- `entrypoints/custom-tools/**`: Separate extension page built with React + Tailwind + shadcn primitives.
+- `public/console-interceptor.js`: Plain JavaScript running in MAIN world; no React/UI framework.
+
 ## Behavior
 - The toolbar only mounts after the user clicks the extension action.
 - The content script is injected into the active tab on click.
@@ -24,10 +31,12 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - The sample button triggers a simple `window.alert`.
 - The Guides button toggles a ruler mode that measures elements and distances.
 - Guides mode shows a small settings bar for label visibility.
+- The Guides settings popup closes when clicking outside or pressing Escape, and reopens on hover while Guides remains active.
 - Guides blocks page mouse handlers while active.
 - The Info button toggles an inspector tooltip for styles.
 - Hovering an element in Guides mode shows full-edge dotted guides.
 - Custom tools are selectable from a button-styled dropdown in the toolbar.
+- Multiple custom tools can be active at once; the toolbar button shows a badge with active count.
 - Custom tool code is executed by the background worker through `userScripts` when available.
 - Browsers without `userScripts` run custom tools through `browser.scripting.executeScript` in `MAIN` world.
 

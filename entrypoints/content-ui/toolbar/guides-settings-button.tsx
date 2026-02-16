@@ -1,5 +1,6 @@
+import { SlidersHorizontal } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import { cn } from "../../../lib/utils";
+import { getToolbarButtonClassName, toolbarIconClassName } from "./toolbar-button-styles";
 
 type GuidesSettingsButtonProps = {
   enabled: boolean;
@@ -13,10 +14,11 @@ export const GuidesSettingsButton = ({ enabled, onToggle }: GuidesSettingsButton
       variant="secondary"
       aria-pressed={enabled}
       aria-label="Toggle always showing selection dimensions"
-      className={cn(enabled && "bg-primary text-primary-foreground hover:bg-primary/90")}
+      className={getToolbarButtonClassName(enabled)}
       onClick={onToggle}
     >
-      Always show dims
+      <SlidersHorizontal className={toolbarIconClassName} aria-hidden="true" />
+      <span>Always show dims</span>
     </Button>
   );
 };
