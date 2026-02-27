@@ -1,5 +1,8 @@
 import { OPEN_CUSTOM_TOOL_EDITOR_MESSAGE, RUN_CUSTOM_TOOL_MESSAGE, SET_UI_MESSAGE } from "../lib/events";
 
+// TODO: refactor this file to leave only the exported defineBackground function
+// move the rest into their own logical folders and files.
+
 const CONTENT_SCRIPT_FILE = "content-scripts/content.js";
 const CONSOLE_INTERCEPTOR_FILE = "console-interceptor.js";
 const DEFAULT_ACTION_TITLE = "wilderness";

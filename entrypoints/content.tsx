@@ -1,5 +1,8 @@
 /// <reference path="../.wxt/wxt.d.ts" />
 
+// TODO: refactor this file to be cleaner, remove unnecessary utils, move ui mounting logic to own file
+// same thing for the console logic and controllers. The file should only contain the exported define content script.
+
 import { createRoot } from "react-dom/client";
 import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
 import { createContentEventHandlers } from "../lib/content-events";

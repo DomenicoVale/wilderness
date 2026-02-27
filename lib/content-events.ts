@@ -108,6 +108,7 @@ export const createContentEventHandlers = ({
 
   /*
    * Keyboard Shortcuts
+   * TODO: move global keyboard shortcuts to separate file
    *
    * i: Toggle Info mode.
    * g: Toggle Guides mode.
