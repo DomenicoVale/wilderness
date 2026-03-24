@@ -8,4 +8,5 @@ TODO & IDEAS:
 - reCAPTCHA tester, maybe as subset of network interceptor, or just as an additional pre-configured tool
 - make sure guides tool updates on any dom change (e.g style changes in devtools as well)
 - click based ruler (on arbitrary points instead of elements)
-- tool to hook up to react dev states
+- tool to hook up to react dev states to facilitate debugging of values/props
+- display first element with overflow set to anything but auto
