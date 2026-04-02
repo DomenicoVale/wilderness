@@ -27,11 +27,19 @@ export default defineConfig({
   webExt: {
     startUrls: ["https://www.google.com"],
   },
-  manifest: {
+  manifest: ({ browser }) => ({
     action: {
       default_title: "wilderness",
     },
     permissions: ["activeTab", "scripting", "storage", "tabs", "userScripts"],
     host_permissions: ["<all_urls>"],
-  },
+    ...(browser === "firefox" && {
+      browser_specific_settings: {
+        gecko: {
+          id: "wilderness@wilderness.dev",
+          strict_min_version: "128.0",
+        },
+      },
+    }),
+  }),
 });

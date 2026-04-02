@@ -34,5 +34,11 @@
 - On browsers without `userScripts.execute`, execution falls back to `browser.scripting.executeScript` in `MAIN` world.
 - All active on-load tools run automatically when the content script starts for enabled origins.
 
+## Browser Support
+- Chrome: MV3 (default build target)
+- Firefox: MV3 128+ (`--mv3` flag in build scripts)
+  - Firefox 128 is the minimum for `world: "MAIN"` in `registerContentScripts` (console interceptor)
+  - Custom tool execution via `userScripts.execute()` requires Firefox 133+; earlier versions fall back to `scripting.executeScript`
+
 ## Future Backend
 We plan to add an Express.js backend later and will migrate to a monorepo layout when that work begins. Until then, the extension remains a single-package repo.
