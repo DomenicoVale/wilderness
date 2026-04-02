@@ -19,6 +19,8 @@ Guides is a ruler-style inspection tool for measuring element dimensions and dis
 
 ## Behavior
 - Guides blocks page mouse handlers while active.
+- Guide boxes, gridlines, and distance labels are mounted in document-space (`absolute`) so they stay attached to their targets while scrolling.
+- Guides geometry is recalculated with a debounced `resize` handler instead of per-frame scroll updates.
 
 ## Relevant Files
 - `entrypoints/content-ui/guides/guides_tool.ts`: Guides controller and event wiring.

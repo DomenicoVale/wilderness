@@ -1,27 +1,8 @@
-import { createDistance, type DistancePosition } from "./distance.element";
+import { createDistance, type DistanceHandle, type DistancePosition } from "./distance.element";
 import { getTargetRect } from "./guides-utils";
 
-type MeasurementState = {
-  distances: ReturnType<typeof createDistance>[];
-};
-
-const state: MeasurementState = {
-  distances: [],
-};
-
-const createMeasurement = (position: DistancePosition) => {
-  const measurement = createDistance();
-  measurement.setPosition(position);
-  state.distances.push(measurement);
-};
-
-export const createMeasurements = (anchor: Element | Range, target: Element | Range) => {
-  clearMeasurements();
-
-  const anchorBounds = getTargetRect(anchor);
-  const targetBounds = getTargetRect(target);
+const buildMeasurementPositions = (anchorBounds: DOMRect, targetBounds: DOMRect): DistancePosition[] => {
   const midOffset = 2.5;
-
   const measurements: DistancePosition[] = [];
 
   if (anchorBounds.right < targetBounds.left) {
@@ -136,15 +117,24 @@ export const createMeasurements = (anchor: Element | Range, target: Element | Ra
     });
   }
 
-  measurements
-    .map((measurement) => ({
-      ...measurement,
-      distance: Math.round(measurement.distance * 100) / 100,
-    }))
-    .forEach(createMeasurement);
+  return measurements.map((measurement) => ({
+    ...measurement,
+    distance: Math.round(measurement.distance * 100) / 100,
+  }));
 };
 
-export const clearMeasurements = () => {
-  state.distances.forEach((node) => node.remove());
-  state.distances = [];
+export const createMeasurements = (anchor: Element | Range, target: Element | Range): DistanceHandle[] => {
+  const anchorBounds = getTargetRect(anchor);
+  const targetBounds = getTargetRect(target);
+  const positions = buildMeasurementPositions(anchorBounds, targetBounds);
+
+  return positions.map((position) => {
+    const measurement = createDistance();
+    measurement.setPosition(position);
+    return measurement;
+  });
+};
+
+export const clearMeasurements = (distances: DistanceHandle[]) => {
+  distances.forEach((node) => node.remove());
 };

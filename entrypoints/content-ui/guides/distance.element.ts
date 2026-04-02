@@ -1,6 +1,8 @@
-type DistanceHandle = {
+export type DistanceHandle = {
   root: HTMLDivElement;
   setPosition: (position: DistancePosition) => void;
+  setColor: (color: string) => void;
+  setVisible: (v: boolean) => void;
   remove: () => void;
 };
 
@@ -23,7 +25,7 @@ export const createDistance = (): DistanceHandle => {
   label.className = "wilderness-distance__label";
 
   root.append(line, label);
-  const parent = document.body ?? document.documentElement;
+  const parent = document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount distance: no document root.");
   } else {
@@ -49,9 +51,20 @@ export const createDistance = (): DistanceHandle => {
     label.style.top = "-12px";
   };
 
+  const setColor = (color: string) => {
+    line.style.background = color;
+    label.style.background = color;
+  };
+
+  const setVisible = (v: boolean) => {
+    root.style.display = v ? "block" : "none";
+  };
+
   return {
     root,
     setPosition,
+    setColor,
+    setVisible,
     remove: () => {
       root.remove();
     },

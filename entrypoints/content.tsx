@@ -21,6 +21,7 @@ let contentUi: ShadowRootContentScriptUi<ReturnType<typeof createRoot>> | null =
 let isMounted = false;
 let guidesController: ReturnType<typeof createGuidesController> | null = null;
 let infoController: ReturnType<typeof createInfoController> | null = null;
+let shouldMountUi = false;
 
 const disableGuides = () => {
   if (!guidesController) {
@@ -140,13 +141,58 @@ const mountUi = async (ctx: ContentScriptContextType) => {
 };
 
 const unmountUi = () => {
+  guidesController?.disable();
+  infoController?.disable();
+  setToolState({
+    guidesEnabled: false,
+    infoEnabled: false,
+    consolePanelOpen: false,
+  });
+
   if (!contentUi || !isMounted) {
     return;
   }
 
-  guidesController?.disable();
   contentUi.remove();
   isMounted = false;
+};
+
+const startNavigationWatcher = (ctx: ContentScriptContextType) => {
+  const isShadowHostPresent = () => !!document.querySelector("wilderness-toolbar");
+
+  const handleNavigation = () => {
+    setTimeout(() => {
+      if (!shouldMountUi) {
+        return;
+      }
+
+      if (!isShadowHostPresent()) {
+        contentUi = null;
+        isMounted = false;
+        void mountUi(ctx);
+      }
+    }, 50);
+  };
+
+  window.addEventListener("popstate", handleNavigation);
+
+  const origPushState = history.pushState.bind(history);
+  history.pushState = (...args: Parameters<typeof history.pushState>) => {
+    origPushState(...args);
+    handleNavigation();
+  };
+
+  const origReplaceState = history.replaceState.bind(history);
+  history.replaceState = (...args: Parameters<typeof history.replaceState>) => {
+    origReplaceState(...args);
+    handleNavigation();
+  };
+
+  const observer = new MutationObserver(handleNavigation);
+  const observeTarget = document.body ?? document.documentElement;
+  if (observeTarget) {
+    observer.observe(observeTarget, { childList: true });
+  }
 };
 
 export default defineContentScript({
@@ -177,6 +223,7 @@ export default defineContentScript({
         return;
       }
 
+      shouldMountUi = message.enabled;
       if (message.enabled) {
         void mountUi(ctx);
         return;
@@ -219,5 +266,6 @@ export default defineContentScript({
     };
 
     void runActiveToolOnLoad();
+    startNavigationWatcher(ctx);
   },
 });

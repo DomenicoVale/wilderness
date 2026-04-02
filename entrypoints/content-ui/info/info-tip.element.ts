@@ -81,7 +81,7 @@ export const createInfoTip = (): InfoTipHandle => {
   root.append(card);
 
   root.style.display = "none";
-  const parent = document.body ?? document.documentElement;
+  const parent = document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Info] Unable to mount info tip: no document root.");
   } else {
@@ -104,8 +104,10 @@ export const createInfoTip = (): InfoTipHandle => {
       return;
     }
 
-    root.style.left = `${event.clientX - dragState.offsetX}px`;
-    root.style.top = `${event.clientY - dragState.offsetY}px`;
+    const x = event.clientX - dragState.offsetX + (window.scrollX || window.pageXOffset || 0);
+    const y = event.clientY - dragState.offsetY + (window.scrollY || window.pageYOffset || 0);
+    root.style.left = `${x}px`;
+    root.style.top = `${y}px`;
   };
 
   const handlePointerUp = () => {

@@ -5,6 +5,7 @@ import { setToolState } from "../tool-state";
 import { getToolbarButtonClassName, toolbarIconClassName } from "./toolbar-button-styles";
 export type GuidesSettings = {
   alwaysShowDimensions: boolean;
+  keepPairDistances: boolean;
 };
 
 type GuidesToggleButtonProps = {

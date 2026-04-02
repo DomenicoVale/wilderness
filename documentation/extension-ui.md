@@ -34,6 +34,8 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - The Guides settings popup closes when clicking outside or pressing Escape, and reopens on hover while Guides remains active.
 - Guides blocks page mouse handlers while active.
 - The Info button toggles an inspector tooltip for styles.
+- While Info is active, `[CLICKTIP:ON/OFF]` controls whether clicking pins a tooltip card or only pins outline/layout overlays.
+- While Info is active, `[LAYOUTDIST:ON/OFF]` controls whether spacing overlays show full item-to-item whitespace or CSS gap only.
 - Hovering an element in Guides mode shows full-edge dotted guides.
 - Custom tools are selectable from a button-styled dropdown in the toolbar.
 - Multiple custom tools can be active at once; the toolbar button shows a badge with active count.

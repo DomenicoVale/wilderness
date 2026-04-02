@@ -1,9 +1,8 @@
 const GUIDES_STYLE_ID = "wilderness-guides-styles";
 const GUIDES_STYLES = `
 .wilderness-guide-box,
-.wilderness-distance,
-.wilderness-gridlines {
-  position: fixed;
+.wilderness-distance {
+  position: absolute;
   left: 0;
   top: 0;
   pointer-events: none;
@@ -23,8 +22,8 @@ const GUIDES_STYLES = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 3px;
+  border-radius: 0;
   background: #111827;
   color: #f9fafb;
   font-family: ui-sans-serif, system-ui, sans-serif;
@@ -35,12 +34,14 @@ const GUIDES_STYLES = `
 
 .wilderness-guide-box__label--width {
   left: 50%;
-  top: -24px;
+  top: auto;
+  bottom: calc(100% + 4px);
   transform: translateX(-50%);
 }
 
 .wilderness-guide-box__label--height {
-  left: -24px;
+  left: auto;
+  right: calc(100% + 4px);
   top: 50%;
   transform: translateY(-50%);
 }
@@ -54,8 +55,8 @@ const GUIDES_STYLES = `
 
 .wilderness-distance__label {
   position: absolute;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 3px;
+  border-radius: 0;
   background: #111827;
   color: #f9fafb;
   font-family: ui-sans-serif, system-ui, sans-serif;
@@ -66,13 +67,18 @@ const GUIDES_STYLES = `
 }
 
 .wilderness-gridlines {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .wilderness-gridlines__svg {
-  width: 100%;
-  height: 100%;
+  display: block;
+  overflow: visible;
 }
 
 .wilderness-gridlines__svg line {

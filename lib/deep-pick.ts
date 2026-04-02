@@ -1,4 +1,5 @@
 export type DeepTarget = Element | Range;
+export type TargetRectSpace = "viewport" | "document";
 
 let warnedUnsupportedCaret = false;
 
@@ -122,10 +123,17 @@ export const getElementForTarget = (target: DeepTarget | null) => {
 export const isDeepPickEvent = (event: MouseEvent) => event.altKey || event.metaKey;
 
 // Provide a rect for both elements and text ranges.
-export const getTargetRect = (target: DeepTarget) => {
-  if (target instanceof Element) {
-    return target.getBoundingClientRect();
+const getViewportScroll = () => ({
+  x: window.scrollX || window.pageXOffset || 0,
+  y: window.scrollY || window.pageYOffset || 0,
+});
+
+export const getTargetRect = (target: DeepTarget, space: TargetRectSpace = "viewport") => {
+  const rect = target.getBoundingClientRect();
+  if (space === "viewport") {
+    return rect;
   }
 
-  return target.getBoundingClientRect();
+  const scroll = getViewportScroll();
+  return new DOMRect(rect.left + scroll.x, rect.top + scroll.y, rect.width, rect.height);
 };

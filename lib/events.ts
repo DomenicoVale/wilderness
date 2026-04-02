@@ -4,4 +4,5 @@ export const RUN_CUSTOM_TOOL_MESSAGE = "wilderness:run-custom-tool";
 export const TOGGLE_GUIDES_EVENT = "wilderness:toggle-guides";
 export const GUIDES_SETTINGS_EVENT = "wilderness:guides-settings";
 export const TOGGLE_INFO_EVENT = "wilderness:toggle-info";
+export const INFO_SETTINGS_EVENT = "wilderness:info-settings";
 export const TOGGLE_CONSOLE_EVENT = "wilderness:toggle-console";

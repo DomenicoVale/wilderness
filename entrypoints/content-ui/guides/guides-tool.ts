@@ -1,4 +1,5 @@
 import { getDeepTargetFromPoint, isDeepPickEvent } from "../../../lib/deep-pick";
+import type { DistanceHandle } from "./distance.element";
 import { createGridlines } from "./gridlines.element";
 import { createGuideBox } from "./guide-box.element";
 import { ensureGuidesStyles, removeGuidesStyles } from "./guides-styles";
@@ -14,6 +15,17 @@ type GuidesState = {
 
 export type GuidesSettings = {
   alwaysShowDimensions: boolean;
+  keepPairDistances: boolean;
+};
+
+type FrozenPair = {
+  selectedTarget: Element | Range;
+  lockedTarget: Element | Range;
+  selectedBox: ReturnType<typeof createGuideBox>;
+  lockedBox: ReturnType<typeof createGuideBox>;
+  gridlines: ReturnType<typeof createGridlines>;
+  distances: DistanceHandle[];
+  color: string;
 };
 
 const MOUSE_BLOCK_EVENTS: Array<keyof WindowEventMap> = [
@@ -29,6 +41,16 @@ const MOUSE_BLOCK_EVENTS: Array<keyof WindowEventMap> = [
   "contextmenu",
 ];
 
+const RESIZE_DEBOUNCE_MS = 120;
+
+const isTargetConnected = (target: Element | Range) => {
+  if (target instanceof Element) {
+    return target.isConnected;
+  }
+
+  return target.commonAncestorContainer.isConnected;
+};
+
 export const createGuidesController = () => {
   const state: GuidesState = {
     enabled: false,
@@ -39,12 +61,113 @@ export const createGuidesController = () => {
 
   const settings: GuidesSettings = {
     alwaysShowDimensions: false,
+    keepPairDistances: true,
+  };
+  const PAIR_COLORS = ["#8b5cf6", "#ef4444", "#f59e0b", "#06b6d4", "#10b981", "#f97316", "#ec4899", "#6366f1"];
+  let pairColorIndex = 0;
+  const nextColor = () => {
+    const c = PAIR_COLORS[pairColorIndex % PAIR_COLORS.length];
+    if (!c) {
+      console.warn("[Guides] Unable to resolve a pair color, using fallback.");
+      return "#8b5cf6";
+    }
+    pairColorIndex++;
+    return c;
   };
 
   let selectedBox: ReturnType<typeof createGuideBox> | null = null;
   let hoverBox: ReturnType<typeof createGuideBox> | null = null;
   let lockedBox: ReturnType<typeof createGuideBox> | null = null;
   let gridlines: ReturnType<typeof createGridlines> | null = null;
+  let frozenPairs: FrozenPair[] = [];
+  let activeDistances: DistanceHandle[] = [];
+  let resizeDebounceId: number | null = null;
+
+  const clearActiveMeasurements = () => {
+    if (!activeDistances.length) {
+      return;
+    }
+
+    clearMeasurements(activeDistances);
+    activeDistances = [];
+  };
+
+  const applyPairLabelSides = (
+    selectedRect: DOMRect,
+    lockedRect: DOMRect,
+    selectedHandle: ReturnType<typeof createGuideBox>,
+    lockedHandle: ReturnType<typeof createGuideBox>
+  ) => {
+    if (lockedRect.top >= selectedRect.bottom || lockedRect.top > selectedRect.top) {
+      selectedHandle.setLabelSide("top", "left");
+      lockedHandle.setLabelSide("bottom", "right");
+      return;
+    }
+
+    selectedHandle.setLabelSide("bottom", "right");
+    lockedHandle.setLabelSide("top", "left");
+  };
+
+  const getSafeRect = (target: Element | Range, context: string): DOMRect | null => {
+    try {
+      return getTargetRect(target);
+    } catch (error) {
+      console.warn(`[Guides] Unable to read ${context} bounds.`, error);
+      return null;
+    }
+  };
+
+  const replaceActiveMeasurements = (anchor: Element | Range, target: Element | Range) => {
+    clearActiveMeasurements();
+    activeDistances = createMeasurements(anchor, target);
+  };
+
+  const removeFrozenPair = (pair: FrozenPair) => {
+    pair.selectedBox.remove();
+    pair.lockedBox.remove();
+    pair.gridlines.remove();
+    clearMeasurements(pair.distances);
+  };
+
+  const refreshFrozenPairs = () => {
+    const nextPairs: FrozenPair[] = [];
+
+    frozenPairs.forEach((pair) => {
+      if (!isTargetConnected(pair.selectedTarget) || !isTargetConnected(pair.lockedTarget)) {
+        console.warn("[Guides] Removed a frozen pair because one of its targets is no longer connected.");
+        removeFrozenPair(pair);
+        return;
+      }
+
+      const selectedRect = getSafeRect(pair.selectedTarget, "frozen selected target");
+      const lockedRect = getSafeRect(pair.lockedTarget, "frozen locked target");
+      if (!selectedRect || !lockedRect) {
+        removeFrozenPair(pair);
+        return;
+      }
+
+      pair.selectedBox.setRect(selectedRect);
+      pair.lockedBox.setRect(lockedRect);
+      pair.selectedBox.setLabelsVisible(settings.alwaysShowDimensions);
+      pair.lockedBox.setLabelsVisible(settings.alwaysShowDimensions);
+      pair.selectedBox.show();
+      pair.lockedBox.show();
+      pair.gridlines.update(lockedRect);
+      pair.gridlines.show();
+      applyPairLabelSides(selectedRect, lockedRect, pair.selectedBox, pair.lockedBox);
+
+      clearMeasurements(pair.distances);
+      pair.distances = createMeasurements(pair.selectedTarget, pair.lockedTarget);
+      pair.distances.forEach((distance) => {
+        distance.setColor(pair.color);
+        distance.setVisible(settings.keepPairDistances);
+      });
+
+      nextPairs.push(pair);
+    });
+
+    frozenPairs = nextPairs;
+  };
 
   const ensureBoxes = () => {
     if (!selectedBox) {
@@ -64,6 +187,38 @@ export const createGuidesController = () => {
     }
   };
 
+  const freezeCurrentPair = () => {
+    if (selectedBox && lockedBox && gridlines && state.selected && state.lockedTarget) {
+      const color = nextColor();
+      selectedBox.setColor(color);
+      lockedBox.setColor(color);
+      activeDistances.forEach((distance) => {
+        distance.setColor(color);
+        distance.setVisible(settings.keepPairDistances);
+      });
+
+      frozenPairs.push({
+        selectedTarget: state.selected,
+        lockedTarget: state.lockedTarget,
+        selectedBox,
+        lockedBox,
+        gridlines,
+        distances: activeDistances,
+        color,
+      });
+      activeDistances = [];
+    } else {
+      console.warn("[Guides] Unable to freeze pair because the selection is incomplete.");
+      clearActiveMeasurements();
+    }
+
+    selectedBox = createGuideBox("selected");
+    lockedBox = createGuideBox("locked");
+    gridlines = createGridlines();
+    state.selected = null;
+    state.lockedTarget = null;
+  };
+
   const updateLockedTarget = (next: Element | Range | null) => {
     if (!lockedBox) {
       return;
@@ -74,16 +229,34 @@ export const createGuidesController = () => {
     if (!next) {
       lockedBox.hide();
       gridlines?.hide();
-      clearMeasurements();
+      clearActiveMeasurements();
       return;
     }
 
-    const rect = getTargetRect(next);
-    lockedBox.setRect(rect);
-    lockedBox.setLabelsVisible(true);
+    const lockedRect = getSafeRect(next, "locked target");
+    if (!lockedRect) {
+      lockedBox.hide();
+      gridlines?.hide();
+      clearActiveMeasurements();
+      return;
+    }
+
+    lockedBox.setRect(lockedRect);
+    lockedBox.setLabelsVisible(settings.alwaysShowDimensions);
     lockedBox.show();
-    gridlines?.update(rect);
+    gridlines?.update(lockedRect);
     gridlines?.show();
+
+    if (state.selected && selectedBox) {
+      const selectedRect = getSafeRect(state.selected, "selected target");
+      if (!selectedRect) {
+        clearActiveMeasurements();
+        return;
+      }
+
+      applyPairLabelSides(selectedRect, lockedRect, selectedBox, lockedBox);
+      replaceActiveMeasurements(state.selected, next);
+    }
   };
 
   const updateSelection = (next: Element | Range | null) => {
@@ -96,12 +269,18 @@ export const createGuidesController = () => {
     if (!next) {
       selectedBox.hide();
       if (!state.lockedTarget) {
-        clearMeasurements();
+        clearActiveMeasurements();
       }
       return;
     }
 
-    selectedBox.setRect(getTargetRect(next));
+    const rect = getSafeRect(next, "selected target");
+    if (!rect) {
+      selectedBox.hide();
+      return;
+    }
+
+    selectedBox.setRect(rect);
     selectedBox.setLabelsVisible(settings.alwaysShowDimensions);
     selectedBox.show();
   };
@@ -119,23 +298,64 @@ export const createGuidesController = () => {
       hoverBox.hide();
       if (!state.lockedTarget) {
         gridlines?.hide();
-        clearMeasurements();
+        clearActiveMeasurements();
       }
       return;
     }
 
-    const rect = getTargetRect(next);
+    const rect = getSafeRect(next, "hover target");
+    if (!rect) {
+      hoverBox.hide();
+      if (!state.lockedTarget) {
+        gridlines?.hide();
+        clearActiveMeasurements();
+      }
+      return;
+    }
+
     hoverBox.setRect(rect);
     hoverBox.setLabelsVisible(true);
     hoverBox.show();
+
     if (!state.lockedTarget) {
       gridlines?.update(rect);
       gridlines?.show();
 
       if (state.selected) {
-        createMeasurements(state.selected, next);
+        replaceActiveMeasurements(state.selected, next);
       }
     }
+  };
+
+  const refreshOnResize = () => {
+    if (state.selected) {
+      updateSelection(state.selected);
+    }
+
+    if (state.hovered) {
+      updateHover(state.hovered);
+    }
+
+    if (state.lockedTarget) {
+      updateLockedTarget(state.lockedTarget);
+    }
+
+    refreshFrozenPairs();
+  };
+
+  const scheduleResizeRefresh = () => {
+    if (resizeDebounceId !== null) {
+      window.clearTimeout(resizeDebounceId);
+    }
+
+    resizeDebounceId = window.setTimeout(() => {
+      resizeDebounceId = null;
+      if (!state.enabled) {
+        return;
+      }
+
+      refreshOnResize();
+    }, RESIZE_DEBOUNCE_MS);
   };
 
   const handleClick = (event: Event) => {
@@ -159,19 +379,21 @@ export const createGuidesController = () => {
     event.preventDefault();
     event.stopPropagation();
 
+    if (state.lockedTarget) {
+      freezeCurrentPair();
+      updateSelection(target);
+      updateHover(target);
+      return;
+    }
+
     if (!state.selected) {
       updateSelection(target);
       updateHover(target);
       return;
     }
 
-    if (state.lockedTarget) {
-      return;
-    }
-
     if (target && state.selected !== target) {
       updateLockedTarget(target);
-      createMeasurements(state.selected, target);
     }
   };
 
@@ -217,20 +439,6 @@ export const createGuidesController = () => {
     event.stopImmediatePropagation();
   };
 
-  const handleScroll = () => {
-    if (!state.enabled) {
-      return;
-    }
-
-    if (state.selected) {
-      updateSelection(state.selected);
-    }
-
-    if (state.hovered) {
-      updateHover(state.hovered);
-    }
-  };
-
   const handleKeydown = (event: KeyboardEvent) => {
     if (!state.enabled) {
       return;
@@ -241,6 +449,8 @@ export const createGuidesController = () => {
     }
 
     event.preventDefault();
+    frozenPairs.forEach((pair) => removeFrozenPair(pair));
+    frozenPairs = [];
     updateLockedTarget(null);
     updateSelection(null);
     updateHover(null);
@@ -258,8 +468,7 @@ export const createGuidesController = () => {
     window.addEventListener("mousemove", handleMove, true);
     window.addEventListener("click", handleClick, true);
     window.addEventListener("keydown", handleKeydown);
-    window.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleScroll);
+    window.addEventListener("resize", scheduleResizeRefresh);
     MOUSE_BLOCK_EVENTS.forEach((type) => {
       window.addEventListener(type, handleMouseBlock, true);
     });
@@ -282,14 +491,19 @@ export const createGuidesController = () => {
     hoverBox = null;
     lockedBox = null;
     gridlines = null;
-    clearMeasurements();
+    frozenPairs.forEach((pair) => removeFrozenPair(pair));
+    frozenPairs = [];
+    clearActiveMeasurements();
+    if (resizeDebounceId !== null) {
+      window.clearTimeout(resizeDebounceId);
+      resizeDebounceId = null;
+    }
     removeGuidesStyles();
 
     window.removeEventListener("mousemove", handleMove, true);
     window.removeEventListener("click", handleClick, true);
     window.removeEventListener("keydown", handleKeydown);
-    window.removeEventListener("scroll", handleScroll);
-    window.removeEventListener("resize", handleScroll);
+    window.removeEventListener("resize", scheduleResizeRefresh);
     MOUSE_BLOCK_EVENTS.forEach((type) => {
       window.removeEventListener(type, handleMouseBlock, true);
     });
@@ -298,10 +512,22 @@ export const createGuidesController = () => {
   const updateSettings = (next: Partial<GuidesSettings>) => {
     settings.alwaysShowDimensions =
       typeof next.alwaysShowDimensions === "boolean" ? next.alwaysShowDimensions : settings.alwaysShowDimensions;
+    settings.keepPairDistances =
+      typeof next.keepPairDistances === "boolean" ? next.keepPairDistances : settings.keepPairDistances;
 
     if (selectedBox) {
       selectedBox.setLabelsVisible(settings.alwaysShowDimensions);
     }
+
+    if (lockedBox) {
+      lockedBox.setLabelsVisible(settings.alwaysShowDimensions);
+    }
+
+    frozenPairs.forEach((pair) => {
+      pair.selectedBox.setLabelsVisible(settings.alwaysShowDimensions);
+      pair.lockedBox.setLabelsVisible(settings.alwaysShowDimensions);
+      pair.distances.forEach((distance) => distance.setVisible(settings.keepPairDistances));
+    });
   };
 
   const toggle = (next?: boolean) => {

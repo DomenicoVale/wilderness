@@ -1,7 +1,13 @@
 import type { createGuidesController, GuidesSettings } from "../entrypoints/content-ui/guides/guides-tool";
-import type { createInfoController } from "../entrypoints/content-ui/info/info-tool";
+import type { createInfoController, InfoSettings } from "../entrypoints/content-ui/info/info-tool";
 import { setToolState } from "../entrypoints/content-ui/tool-state";
-import { GUIDES_SETTINGS_EVENT, TOGGLE_CONSOLE_EVENT, TOGGLE_GUIDES_EVENT, TOGGLE_INFO_EVENT } from "./events";
+import {
+  GUIDES_SETTINGS_EVENT,
+  INFO_SETTINGS_EVENT,
+  TOGGLE_CONSOLE_EVENT,
+  TOGGLE_GUIDES_EVENT,
+  TOGGLE_INFO_EVENT,
+} from "./events";
 
 type GuidesController = ReturnType<typeof createGuidesController>;
 type InfoController = ReturnType<typeof createInfoController>;
@@ -104,6 +110,16 @@ export const createContentEventHandlers = ({
 
   [TOGGLE_CONSOLE_EVENT]: () => {
     toggleConsolePanel();
+  },
+
+  [INFO_SETTINGS_EVENT]: (event) => {
+    const detail = event instanceof CustomEvent ? event.detail : null;
+    const controller = getInfoController();
+    if (!controller || !detail) {
+      return;
+    }
+
+    controller.updateSettings(detail as Partial<InfoSettings>);
   },
 
   /*

@@ -1,4 +1,9 @@
-import { type DeepTarget, getElementForTarget } from "../../../lib/deep-pick";
+import {
+  type DeepTarget,
+  getTargetRect as getDeepTargetRect,
+  getElementForTarget,
+  type TargetRectSpace,
+} from "../../../lib/deep-pick";
 
 const TOOLBAR_HOST = "wilderness-toolbar";
 
@@ -37,10 +42,4 @@ export const isOffBounds = (node: DeepTarget | null) => {
   return element === document.documentElement || element === document.body;
 };
 
-export const getTargetRect = (target: Element | Range) => {
-  if (target instanceof Element) {
-    return target.getBoundingClientRect();
-  }
-
-  return target.getBoundingClientRect();
-};
+export const getTargetRect = (target: Element | Range, space: TargetRectSpace = "document") => getDeepTargetRect(target, space);

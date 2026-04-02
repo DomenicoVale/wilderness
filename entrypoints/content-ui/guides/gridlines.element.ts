@@ -19,6 +19,30 @@ const createSvg = () => {
   return { svg, lineLeft, lineRight, lineTop, lineBottom };
 };
 
+const getDocumentDimensions = () => {
+  const body = document.body;
+  const doc = document.documentElement;
+
+  return {
+    width: Math.max(
+      window.innerWidth,
+      body?.scrollWidth ?? 0,
+      body?.offsetWidth ?? 0,
+      doc?.scrollWidth ?? 0,
+      doc?.offsetWidth ?? 0,
+      doc?.clientWidth ?? 0
+    ),
+    height: Math.max(
+      window.innerHeight,
+      body?.scrollHeight ?? 0,
+      body?.offsetHeight ?? 0,
+      doc?.scrollHeight ?? 0,
+      doc?.offsetHeight ?? 0,
+      doc?.clientHeight ?? 0
+    ),
+  };
+};
+
 export const createGridlines = (): GridlinesHandle => {
   const root = document.createElement("div");
   root.className = "wilderness-gridlines";
@@ -26,7 +50,7 @@ export const createGridlines = (): GridlinesHandle => {
   const { svg, lineLeft, lineRight, lineTop, lineBottom } = createSvg();
   root.append(svg);
   root.style.display = "none";
-  const parent = document.body ?? document.documentElement;
+  const parent = document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount gridlines: no document root.");
   } else {
@@ -34,12 +58,11 @@ export const createGridlines = (): GridlinesHandle => {
   }
 
   const update = (rect: DOMRect) => {
-    const winWidth = window.innerWidth;
-    const winHeight = window.innerHeight;
+    const dimensions = getDocumentDimensions();
 
-    svg.setAttribute("viewBox", `0 0 ${winWidth} ${winHeight}`);
-    svg.setAttribute("width", `${winWidth}`);
-    svg.setAttribute("height", `${winHeight}`);
+    svg.setAttribute("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`);
+    svg.setAttribute("width", `${dimensions.width}`);
+    svg.setAttribute("height", `${dimensions.height}`);
 
     const left = rect.left;
     const right = rect.left + rect.width;
@@ -49,20 +72,20 @@ export const createGridlines = (): GridlinesHandle => {
     lineLeft.setAttribute("x1", `${left}`);
     lineLeft.setAttribute("x2", `${left}`);
     lineLeft.setAttribute("y1", "0");
-    lineLeft.setAttribute("y2", `${winHeight}`);
+    lineLeft.setAttribute("y2", `${dimensions.height}`);
 
     lineRight.setAttribute("x1", `${right}`);
     lineRight.setAttribute("x2", `${right}`);
     lineRight.setAttribute("y1", "0");
-    lineRight.setAttribute("y2", `${winHeight}`);
+    lineRight.setAttribute("y2", `${dimensions.height}`);
 
     lineTop.setAttribute("x1", "0");
-    lineTop.setAttribute("x2", `${winWidth}`);
+    lineTop.setAttribute("x2", `${dimensions.width}`);
     lineTop.setAttribute("y1", `${top}`);
     lineTop.setAttribute("y2", `${top}`);
 
     lineBottom.setAttribute("x1", "0");
-    lineBottom.setAttribute("x2", `${winWidth}`);
+    lineBottom.setAttribute("x2", `${dimensions.width}`);
     lineBottom.setAttribute("y1", `${bottom}`);
     lineBottom.setAttribute("y2", `${bottom}`);
   };

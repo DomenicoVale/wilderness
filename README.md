@@ -9,3 +9,4 @@ TODO & IDEAS:
 - make sure guides tool updates on any dom change (e.g style changes in devtools as well)
 - click based ruler (on arbitrary points instead of elements)
 - tool to hook up to react dev states
+- cat/animal pic on toggle + sound + text "go get'em! squish dem bugs :)"
