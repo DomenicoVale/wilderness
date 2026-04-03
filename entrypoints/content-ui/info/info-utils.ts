@@ -3,6 +3,8 @@ import { type DeepTarget, getDeepTargetFromPoint, getElementForTarget } from "..
 const TOOLBAR_HOST = "wilderness-toolbar";
 const INFO_TIP_SELECTOR = ".wilderness-info-tip";
 const INFO_OUTLINE_SELECTOR = ".wilderness-info-outline";
+const INSPECT_PANEL_SELECTOR = ".wilderness-inspect-panel";
+const INSPECT_LEFT_SELECTOR = ".wilderness-inspect-left";
 
 const isToolbarElement = (el: Element) => {
   if (el.closest(TOOLBAR_HOST)) {
@@ -22,6 +24,8 @@ const isGuideElement = (el: Element) => el.closest("wilderness-guide-box, wilder
 export const isInfoUiElement = (el: Element) =>
   isToolbarElement(el) ||
   Boolean(el.closest(INFO_TIP_SELECTOR)) ||
+  Boolean(el.closest(INSPECT_PANEL_SELECTOR)) ||
+  Boolean(el.closest(INSPECT_LEFT_SELECTOR)) ||
   Boolean(el.closest(INFO_OUTLINE_SELECTOR)) ||
   isGuideElement(el);
 
@@ -306,4 +310,68 @@ export const observeRemoval = (element: Element, callback: () => void) => {
   });
 
   observer.observe(parent, { childList: true });
+};
+
+export const buildSelectorForElement = (element: Element) => {
+  const escapeSelector = (value: string) => {
+    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+      return CSS.escape(value);
+    }
+    return value.replace(/([^a-zA-Z0-9_-])/g, "\\$1");
+  };
+
+  if (element.id) {
+    return `#${escapeSelector(element.id)}`;
+  }
+
+  const segments: string[] = [];
+  let current: Element | null = element;
+  let guard = 0;
+  while (current && current !== document.body && guard < 8) {
+    const tag = current.tagName.toLowerCase();
+    const className = Array.from(current.classList)
+      .slice(0, 2)
+      .map((name) => escapeSelector(name))
+      .join(".");
+    if (className) {
+      segments.unshift(`${tag}.${className}`);
+      current = current.parentElement;
+      guard += 1;
+      continue;
+    }
+
+    const parent = current.parentElement;
+    if (!parent) {
+      segments.unshift(tag);
+      break;
+    }
+
+    const siblings = Array.from(parent.children).filter((child) => child.tagName === current?.tagName);
+    const index = siblings.indexOf(current);
+    const nth = index >= 0 ? `:nth-of-type(${index + 1})` : "";
+    segments.unshift(`${tag}${nth}`);
+    current = parent;
+    guard += 1;
+  }
+
+  return segments.join(" > ");
+};
+
+export type ComputedStyleItem = {
+  property: string;
+  value: string;
+};
+
+export const getComputedStyleEntries = (element: Element): ComputedStyleItem[] => {
+  const computed = window.getComputedStyle(element);
+  const entries: ComputedStyleItem[] = [];
+  const inlineStyle = element instanceof HTMLElement || element instanceof SVGElement ? element.style : null;
+  for (let index = 0; index < computed.length; index += 1) {
+    const property = computed.item(index);
+    const inlineValue = inlineStyle?.getPropertyValue(property).trim();
+    const value = inlineValue || computed.getPropertyValue(property).trim();
+    entries.push({ property, value });
+  }
+
+  return entries.sort((a, b) => a.property.localeCompare(b.property));
 };

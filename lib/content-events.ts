@@ -3,6 +3,8 @@ import type { createInfoController, InfoSettings } from "../entrypoints/content-
 import { setToolState } from "../entrypoints/content-ui/tool-state";
 import {
   GUIDES_SETTINGS_EVENT,
+  INFO_CLEAR_STATE_EVENT,
+  INFO_SAVE_STATE_EVENT,
   INFO_SETTINGS_EVENT,
   TOGGLE_CONSOLE_EVENT,
   TOGGLE_GUIDES_EVENT,
@@ -120,6 +122,24 @@ export const createContentEventHandlers = ({
     }
 
     controller.updateSettings(detail as Partial<InfoSettings>);
+  },
+
+  [INFO_SAVE_STATE_EVENT]: () => {
+    const controller = getInfoController();
+    if (!controller) {
+      return;
+    }
+
+    void controller.saveState();
+  },
+
+  [INFO_CLEAR_STATE_EVENT]: () => {
+    const controller = getInfoController();
+    if (!controller) {
+      return;
+    }
+
+    void controller.clearState();
   },
 
   /*

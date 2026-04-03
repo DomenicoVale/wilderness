@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
 import { openCustomToolsEditor } from "../../../lib/custom-tools-actions";
-import { runCustomTool } from "../../../lib/custom-tools-runner";
 import { toggleActiveCustomToolId, useCustomToolsStore } from "../../../lib/custom-tools-store";
 import { cn } from "../../../lib/utils";
 import { getToolbarButtonClassName, toolbarIconClassName } from "./toolbar-button-styles";
@@ -29,20 +28,8 @@ export const CustomToolsButton = () => {
   };
 
   const handleToggleTool = (toolId: string) => {
-    const tool = tools.find((item) => item.id === toolId);
-    if (!tool) {
-      console.warn("[wilderness] Unable to find selected custom tool.");
-      return;
-    }
-
-    const isActive = activeToolSet.has(tool.id);
-    void toggleActiveCustomToolId(tool.id, !isActive).then((enabled) => {
-      if (!enabled) {
-        return;
-      }
-
-      void runCustomTool({ tool, reason: "enable" });
-    });
+    const isActive = activeToolSet.has(toolId);
+    void toggleActiveCustomToolId(toolId, !isActive);
   };
 
   if (status === "loading" || tools.length === 0) {

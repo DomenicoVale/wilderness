@@ -8,12 +8,15 @@ const CONSOLE_INTERCEPTOR_FILE = "console-interceptor.js";
 const DEFAULT_ACTION_TITLE = "wilderness";
 const ACTION_WARNING_BADGE_TEXT = "!";
 const ACTION_WARNING_BADGE_COLOR = "#f59e0b";
+const CUSTOM_TOOL_RUNTIME_KEY = "__wildernessCustomToolRuntime__";
 
 const ENABLED_ORIGINS_KEY = "wilderness:enabled-origins";
-type CustomToolRunReason = "enable" | "load";
+type CustomToolRunReason = "enable" | "load" | "disable";
+type CustomToolAction = "setup" | "cleanup";
 type CustomToolRunMessage = {
+  id: string;
   name: string;
-  code: string;
+  code?: string;
 };
 type RunCustomToolResponse = {
   ok: boolean;
@@ -213,7 +216,10 @@ const openCustomToolsEditorTab = async () => {
   }
 };
 
-const isCustomToolRunReason = (value: unknown): value is CustomToolRunReason => value === "enable" || value === "load";
+const isCustomToolRunReason = (value: unknown): value is CustomToolRunReason =>
+  value === "enable" || value === "load" || value === "disable";
+
+const isCustomToolAction = (value: unknown): value is CustomToolAction => value === "setup" || value === "cleanup";
 
 const toCustomToolRunMessage = (value: unknown): CustomToolRunMessage | null => {
   if (!value || typeof value !== "object") {
@@ -221,27 +227,96 @@ const toCustomToolRunMessage = (value: unknown): CustomToolRunMessage | null => 
   }
 
   const record = value as Record<string, unknown>;
-  if (typeof record.name !== "string" || typeof record.code !== "string") {
+  if (typeof record.id !== "string" || typeof record.name !== "string") {
     return null;
   }
 
   return {
+    id: record.id,
     name: record.name,
-    code: record.code,
+    code: typeof record.code === "string" ? record.code : undefined,
   };
 };
 
 const toSourceLabel = (toolName: string) => toolName.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 48) || "custom_tool";
 const toSafeError = (value: string | undefined, fallback: string) => value || fallback;
-const shouldFallbackToUserScriptWorld = (message: string) => {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("content security policy") ||
-    normalized.includes("unsafe-eval") ||
-    normalized.includes("violates") ||
-    normalized.includes("blocked")
-  );
+const buildCustomToolSetupSource = (tool: CustomToolRunMessage) => {
+  const sourceLabel = `wilderness-custom-tool-${toSourceLabel(tool.name)}.js`;
+  return `(() => {
+  const registryKey = ${JSON.stringify(CUSTOM_TOOL_RUNTIME_KEY)};
+  const toolId = ${JSON.stringify(tool.id)};
+  const registry = globalThis[registryKey] || (globalThis[registryKey] = Object.create(null));
+  const currentEntry = registry[toolId];
+  if (currentEntry && typeof currentEntry.cleanup === "function") {
+    try {
+      const cleanupResult = currentEntry.cleanup();
+      if (cleanupResult && typeof cleanupResult.then === "function") {
+        cleanupResult.catch((error) => {
+          console.warn("[wilderness] Async custom tool cleanup failed before setup.", error);
+        });
+      }
+    } catch (error) {
+      console.warn("[wilderness] Failed to cleanup custom tool before setup.", error);
+    }
+  }
+
+  let definedTool;
+  const defineTool = (definition) => {
+    definedTool = definition;
+    return definition;
+  };
+
+  const returnedTool = (() => {
+${tool.code ?? ""}
+//# sourceURL=${sourceLabel}
+  })();
+
+  const toolDefinition = definedTool ?? returnedTool;
+  if (toolDefinition != null && (typeof toolDefinition !== "object" || Array.isArray(toolDefinition))) {
+    throw new Error("Custom tools must call defineTool({ setup, cleanup }).");
+  }
+
+  if (toolDefinition && typeof toolDefinition.setup !== "function") {
+    throw new Error("Custom tool definition is missing setup({ beforePageLoad }).");
+  }
+
+  const cleanup = toolDefinition && typeof toolDefinition.cleanup === "function" ? toolDefinition.cleanup.bind(toolDefinition) : undefined;
+  registry[toolId] = { cleanup };
+
+  if (toolDefinition && typeof toolDefinition.setup === "function") {
+    const setupResult = toolDefinition.setup.call(toolDefinition, {
+      beforePageLoad: document.readyState === "loading",
+    });
+    if (setupResult && typeof setupResult.then === "function") {
+      setupResult.catch((error) => {
+        console.warn("[wilderness] Async custom tool setup failed.", error);
+      });
+    }
+  }
+})();`;
 };
+
+const buildCustomToolCleanupSource = (tool: CustomToolRunMessage) => `(() => {
+  const registryKey = ${JSON.stringify(CUSTOM_TOOL_RUNTIME_KEY)};
+  const toolId = ${JSON.stringify(tool.id)};
+  const registry = globalThis[registryKey] || (globalThis[registryKey] = Object.create(null));
+  const currentEntry = registry[toolId];
+
+  if (currentEntry && typeof currentEntry.cleanup === "function") {
+    try {
+      const cleanupResult = currentEntry.cleanup();
+      if (cleanupResult && typeof cleanupResult.then === "function") {
+        cleanupResult.catch((error) => {
+          console.warn("[wilderness] Async custom tool cleanup failed.", error);
+        });
+      }
+    } catch (error) {
+      console.warn("[wilderness] Failed to cleanup custom tool.", error);
+    }
+  }
+
+  delete registry[toolId];
+})();`;
 
 const runCustomToolViaUserScripts = async ({
   tabId,
@@ -280,28 +355,92 @@ const runCustomToolViaUserScripts = async ({
 const runCustomToolViaScripting = async ({
   tabId,
   tool,
+  action,
 }: {
   tabId: number;
   tool: CustomToolRunMessage;
+  action: CustomToolAction;
 }): Promise<RunCustomToolResponse> => {
   try {
     const results = await browser.scripting.executeScript({
       target: { tabId },
       world: "MAIN",
       injectImmediately: true,
-      args: [tool.code, toSourceLabel(tool.name)],
-      func: async (toolCode: string, sourceLabel: string): Promise<RunCustomToolResponse> => {
-        const codeWithLabel = `${toolCode}\n//# sourceURL=wilderness-custom-tool-${sourceLabel}.js`;
+      args: [tool.id, tool.code ?? "", `wilderness-custom-tool-${toSourceLabel(tool.name)}.js`, action],
+      func: async (
+        toolId: string,
+        toolCode: string,
+        sourceLabel: string,
+        currentAction: CustomToolAction
+      ): Promise<RunCustomToolResponse> => {
+        type ToolDefinition = {
+          setup?: (context: { beforePageLoad: boolean }) => unknown;
+          cleanup?: () => unknown;
+        };
+
+        const runtimeKey = "__wildernessCustomToolRuntime__";
+        const registry =
+          ((globalThis as Record<string, unknown>)[runtimeKey] as
+            | Record<string, { cleanup?: (() => unknown) | undefined }>
+            | undefined) ??
+          (((globalThis as Record<string, unknown>)[runtimeKey] = Object.create(null)) as Record<
+            string,
+            { cleanup?: (() => unknown) | undefined }
+          >);
+
         try {
-          const runner = new Function("window", "document", "location", `"use strict";\n${codeWithLabel}`) as (
-            targetWindow: Window,
-            targetDocument: Document,
-            targetLocation: Location
+          if (currentAction === "cleanup") {
+            const currentEntry = registry[toolId];
+            if (currentEntry && typeof currentEntry.cleanup === "function") {
+              const cleanupResult = currentEntry.cleanup();
+              if (cleanupResult instanceof Promise) {
+                await cleanupResult;
+              }
+            }
+
+            delete registry[toolId];
+            return { ok: true };
+          }
+
+          const currentEntry = registry[toolId];
+          if (currentEntry && typeof currentEntry.cleanup === "function") {
+            const cleanupResult = currentEntry.cleanup();
+            if (cleanupResult instanceof Promise) {
+              await cleanupResult;
+            }
+          }
+
+          let definedTool: ToolDefinition | undefined;
+          const defineTool = (definition: ToolDefinition) => {
+            definedTool = definition;
+            return definition;
+          };
+
+          const runner = new Function("defineTool", `"use strict";\n${toolCode}\n//# sourceURL=${sourceLabel}`) as (
+            registerTool: (definition: ToolDefinition) => ToolDefinition
           ) => unknown;
 
-          const result = runner(window, document, window.location);
-          if (result instanceof Promise) {
-            await result;
+          const returnedTool = runner(defineTool);
+          const toolDefinition = definedTool ?? (returnedTool as ToolDefinition | undefined);
+          if (toolDefinition != null && (typeof toolDefinition !== "object" || Array.isArray(toolDefinition))) {
+            return { ok: false, error: "Custom tools must call defineTool({ setup, cleanup })." };
+          }
+
+          if (toolDefinition && typeof toolDefinition.setup !== "function") {
+            return { ok: false, error: "Custom tool definition is missing setup({ beforePageLoad })." };
+          }
+
+          registry[toolId] = {
+            cleanup: typeof toolDefinition?.cleanup === "function" ? toolDefinition.cleanup.bind(toolDefinition) : undefined,
+          };
+
+          if (typeof toolDefinition?.setup === "function") {
+            const setupResult = toolDefinition.setup.call(toolDefinition, {
+              beforePageLoad: document.readyState === "loading",
+            });
+            if (setupResult instanceof Promise) {
+              await setupResult;
+            }
           }
 
           return { ok: true };
@@ -336,46 +475,60 @@ const runCustomToolForTab = async ({
   tabId,
   tool,
   reason,
+  action,
 }: {
   tabId: number;
   tool: CustomToolRunMessage;
   reason: CustomToolRunReason;
+  action: CustomToolAction;
 }): Promise<RunCustomToolResponse> => {
-  const codeWithLabel = `${tool.code}\n//# sourceURL=wilderness-custom-tool-${toSourceLabel(tool.name)}.js`;
+  if (action === "setup" && typeof tool.code !== "string") {
+    return { ok: false, error: "Missing custom tool setup code." };
+  }
+
+  const executableCode = action === "setup" ? buildCustomToolSetupSource(tool) : buildCustomToolCleanupSource(tool);
   const hasUserScriptsApi =
     typeof (browser as unknown as { userScripts?: { execute?: unknown } }).userScripts?.execute === "function";
 
   if (hasUserScriptsApi) {
     const mainResult = await runCustomToolViaUserScripts({
       tabId,
-      code: codeWithLabel,
+      code: executableCode,
       world: "MAIN",
     });
     if (mainResult.ok) {
       return mainResult;
     }
 
-    if (shouldFallbackToUserScriptWorld(mainResult.error ?? "")) {
-      const fallbackResult = await runCustomToolViaUserScripts({
-        tabId,
-        code: codeWithLabel,
-        world: "USER_SCRIPT",
-      });
-      if (fallbackResult.ok) {
-        return fallbackResult;
-      }
-
-      const fallbackMessage = fallbackResult.error || "Unknown execution failure.";
-      console.warn(`[wilderness] Custom tool "${tool.name}" failed (${reason}).`, fallbackMessage);
-      return { ok: false, error: fallbackMessage };
+    const userScriptResult = await runCustomToolViaUserScripts({
+      tabId,
+      code: executableCode,
+      world: "USER_SCRIPT",
+    });
+    if (userScriptResult.ok) {
+      return userScriptResult;
     }
 
-    const mainMessage = mainResult.error || "Unknown execution failure.";
+    // Final fallback for browsers/contexts where userScripts world execution fails.
+    const scriptingResult = await runCustomToolViaScripting({ tabId, tool, action });
+    if (scriptingResult.ok) {
+      return scriptingResult;
+    }
+
+    const combinedError = [
+      mainResult.error ? `MAIN: ${mainResult.error}` : "",
+      userScriptResult.error ? `USER_SCRIPT: ${userScriptResult.error}` : "",
+      scriptingResult.error ? `SCRIPTING: ${scriptingResult.error}` : "",
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    const mainMessage = combinedError || "Unknown execution failure.";
     console.warn(`[wilderness] Custom tool "${tool.name}" failed (${reason}).`, mainMessage);
     return { ok: false, error: mainMessage };
   }
 
-  const fallbackResult = await runCustomToolViaScripting({ tabId, tool });
+  const fallbackResult = await runCustomToolViaScripting({ tabId, tool, action });
   if (fallbackResult.ok) {
     return fallbackResult;
   }
@@ -446,8 +599,9 @@ export default defineBackground(() => {
 
     const tool = toCustomToolRunMessage(message.tool);
     const reason = message.reason;
+    const action = message.action;
 
-    if (!tool || !isCustomToolRunReason(reason)) {
+    if (!tool || !isCustomToolRunReason(reason) || !isCustomToolAction(action)) {
       console.warn("[wilderness] Invalid custom tool run request.");
       sendResponse({ ok: false, error: "Invalid custom tool run request." } satisfies RunCustomToolResponse);
       return;
@@ -460,7 +614,7 @@ export default defineBackground(() => {
       return;
     }
 
-    void runCustomToolForTab({ tabId, tool, reason }).then((response) => {
+    void runCustomToolForTab({ tabId, tool, reason, action }).then((response) => {
       sendResponse(response);
     });
     return true;

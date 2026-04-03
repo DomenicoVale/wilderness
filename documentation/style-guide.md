@@ -9,7 +9,7 @@ The injected UI uses a **game-hack HUD aesthetic** inspired by classic GTA SAMP 
 | Property | Value |
 |----------|-------|
 | Font family | `'Courier New', Courier, monospace` |
-| Base size | `10px` |
+| Base size | `11px` toolbar, `12px` inspect panel |
 | Line height | `1` (tight) |
 | Letter spacing | `0.02em` |
 
@@ -60,7 +60,7 @@ Button anatomy:
 background: none;
 border: none;
 font-family: inherit;
-font-size: 10px;
+font-size: 11px;
 padding: 2px 4px;
 color: #e0e0e0;
 cursor: pointer;
@@ -69,6 +69,11 @@ letter-spacing: 0.02em;
 
 Active state: `color: #00ff88`.  
 Never use filled backgrounds on buttons in the default state.
+
+Every new interactive control must provide clear, immediate feedback:
+- hover and active visual states
+- success/error feedback for actions that persist, copy, clear, or restore data
+- visible disabled/loading states when actions are in progress
 
 ---
 
@@ -80,7 +85,7 @@ Panels share the same dark treatment as the toolbar bar:
 background: rgba(0, 0, 0, 0.88);
 border: 1px solid rgba(255, 255, 255, 0.15);
 font-family: 'Courier New', Courier, monospace;
-font-size: 10px;
+font-size: 12px;
 color: #e0e0e0;
 ```
 
@@ -130,6 +135,6 @@ Overlay elements (guide boxes, distance lines, info outlines) live in the host p
 
 - Add border-radius to any injected UI element
 - Use proportional fonts in the toolbar or panels
-- Use icon libraries (lucide-react or similar) in new injected UI — text/brackets only
+- Prefer monochrome icon affordances for inspector segmented controls; keep icon-only buttons compact and consistent with HUD colors.
 - Add shadows to overlay elements (guide boxes, info outlines)
 - Use Tailwind classes in newly written injected styles — use the inline CSS string pattern already established in `*-styles.ts` files and `HUD_STYLES` in the toolbar

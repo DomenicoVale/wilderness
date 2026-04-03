@@ -22,17 +22,21 @@
 - Guides runs in the content script and renders overlays into the page DOM.
 - Overlays include selection boxes, hover gridlines, and distance measurements.
 
-## Info Tool
-- Info runs in the content script and renders inspection tips into the page DOM.
-- Tips show computed styles and can be pinned per element.
+## Inspect Tool
+- Inspect runs in the content script and renders outlines/overlays plus right/left inspector panels into the page DOM.
+- The panel edits selected element styles through inline style writes and supports collapse/expand behavior.
 
 ## Custom Tools
 - Custom tools are stored in extension storage with an active tool set (`activeToolIds`).
+- The content script watches the custom tools store and keeps the current page in sync by calling tool setup/cleanup as active ids change.
+- Custom tools expose `defineTool({ setup({ beforePageLoad }), cleanup() })`, letting the extension manage their lifecycle explicitly.
+- `On enable` tools are ephemeral and are cleared on page navigation or extension restart.
+- `On extension load` tools remain active in storage and rerun on every extension/page load.
 - Custom tools execute through the background worker using `browser.userScripts.execute`.
 - Execution tries `MAIN` first, then falls back to `USER_SCRIPT` when needed.
 - The fallback avoids page CSP `unsafe-eval` restrictions while keeping tool execution available.
 - On browsers without `userScripts.execute`, execution falls back to `browser.scripting.executeScript` in `MAIN` world.
-- All active on-load tools run automatically when the content script starts for enabled origins.
+- All active `On extension load` tools run automatically when the content script starts for enabled origins, and cleanup runs when a tool is disabled.
 
 ## Browser Support
 - Chrome: MV3 (default build target)

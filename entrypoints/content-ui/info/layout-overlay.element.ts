@@ -7,35 +7,6 @@ export type LayoutOverlayOptions = {
   showActualDistances?: boolean;
 };
 
-const getDocumentDimensions = () => {
-  const body = document.body;
-  const doc = document.documentElement;
-
-  return {
-    width: Math.max(
-      window.innerWidth,
-      body?.scrollWidth ?? 0,
-      body?.offsetWidth ?? 0,
-      doc?.scrollWidth ?? 0,
-      doc?.offsetWidth ?? 0,
-      doc?.clientWidth ?? 0
-    ),
-    height: Math.max(
-      window.innerHeight,
-      body?.scrollHeight ?? 0,
-      body?.offsetHeight ?? 0,
-      doc?.scrollHeight ?? 0,
-      doc?.offsetHeight ?? 0,
-      doc?.clientHeight ?? 0
-    ),
-  };
-};
-
-const getViewportScroll = () => ({
-  x: window.scrollX || window.pageXOffset || 0,
-  y: window.scrollY || window.pageYOffset || 0,
-});
-
 const toNumber = (value: string) => {
   const parsed = Number.parseFloat(value);
   if (!Number.isFinite(parsed)) {
@@ -45,14 +16,19 @@ const toNumber = (value: string) => {
   return parsed;
 };
 
+const getViewportRect = (): DOMRect => new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+const intersectsViewport = (rect: DOMRect, viewport: DOMRect) =>
+  rect.right > viewport.left && rect.left < viewport.right && rect.bottom > viewport.top && rect.top < viewport.bottom;
+
 export const createLayoutOverlay = (): LayoutOverlayHandle => {
   const root = document.createElement("div");
   root.className = "wilderness-layout-overlay";
-  root.style.cssText = "position:absolute;left:0;top:0;pointer-events:none;z-index:2147483646;overflow:visible;";
+  root.style.cssText =
+    "position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483646;overflow:hidden;";
 
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(NS, "svg");
-  svg.style.cssText = "position:absolute;left:0;top:0;overflow:visible;";
+  svg.style.cssText = "position:absolute;left:0;top:0;overflow:hidden;max-width:100%;max-height:100%;";
   root.appendChild(svg);
 
   const parent = document.documentElement ?? document.body;
@@ -126,49 +102,87 @@ export const createLayoutOverlay = (): LayoutOverlayHandle => {
     const display = cs.display;
     const isFlex = display === "flex" || display === "inline-flex";
     const isGrid = display === "grid" || display === "inline-grid";
-    if (!isFlex && !isGrid) {
+
+    const viewportRect = getViewportRect();
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth));
+    const viewportHeight = Math.max(1, Math.round(window.innerHeight));
+    svg.setAttribute("viewBox", `0 0 ${viewportWidth} ${viewportHeight}`);
+    svg.setAttribute("width", String(viewportWidth));
+    svg.setAttribute("height", String(viewportHeight));
+    root.style.width = "100vw";
+    root.style.height = "100vh";
+
+    const elementRect = element.getBoundingClientRect();
+    if (!intersectsViewport(elementRect, viewportRect)) {
       return;
     }
-
-    const dimensions = getDocumentDimensions();
-    svg.setAttribute("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`);
-    svg.setAttribute("width", String(dimensions.width));
-    svg.setAttribute("height", String(dimensions.height));
-
-    const viewportScroll = getViewportScroll();
-    const crViewport = element.getBoundingClientRect();
-    const cr = {
-      left: crViewport.left + viewportScroll.x,
-      top: crViewport.top + viewportScroll.y,
-      right: crViewport.right + viewportScroll.x,
-      bottom: crViewport.bottom + viewportScroll.y,
-      width: crViewport.width,
-      height: crViewport.height,
+    const bounded = {
+      left: elementRect.left,
+      top: elementRect.top,
+      right: elementRect.right,
+      bottom: elementRect.bottom,
+      width: Math.max(0, elementRect.width),
+      height: Math.max(0, elementRect.height),
     };
     const pt = parseFloat(cs.paddingTop) || 0;
     const pr = parseFloat(cs.paddingRight) || 0;
     const pb = parseFloat(cs.paddingBottom) || 0;
     const pl = parseFloat(cs.paddingLeft) || 0;
+    const mt = parseFloat(cs.marginTop) || 0;
+    const mr = parseFloat(cs.marginRight) || 0;
+    const mb = parseFloat(cs.marginBottom) || 0;
+    const ml = parseFloat(cs.marginLeft) || 0;
+    const marginBox = {
+      left: bounded.left - ml,
+      top: bounded.top - mt,
+      right: bounded.right + mr,
+      bottom: bounded.bottom + mb,
+      width: bounded.width + ml + mr,
+      height: bounded.height + mt + mb,
+    };
 
-    rect(cr.left, cr.top, cr.width, cr.height, "none", "rgba(33,150,243,0.8)", 2, "4 3");
+    rect(bounded.left, bounded.top, bounded.width, bounded.height, "none", "rgba(33,150,243,0.8)", 2, "4 3");
 
     const PAD = "rgba(255,165,0,0.15)";
     const PAD_S = "rgba(255,165,0,0.5)";
     if (pt > 0) {
-      rect(cr.left + pl, cr.top, cr.width - pl - pr, pt, PAD, PAD_S, 1);
-      label(String(Math.round(pt)), cr.left + cr.width / 2, cr.top + pt / 2);
+      rect(bounded.left + pl, bounded.top, bounded.width - pl - pr, pt, PAD, PAD_S, 1);
+      label(String(Math.round(pt)), bounded.left + bounded.width / 2, bounded.top + pt / 2);
     }
     if (pb > 0) {
-      rect(cr.left + pl, cr.bottom - pb, cr.width - pl - pr, pb, PAD, PAD_S, 1);
-      label(String(Math.round(pb)), cr.left + cr.width / 2, cr.bottom - pb / 2);
+      rect(bounded.left + pl, bounded.bottom - pb, bounded.width - pl - pr, pb, PAD, PAD_S, 1);
+      label(String(Math.round(pb)), bounded.left + bounded.width / 2, bounded.bottom - pb / 2);
     }
     if (pl > 0) {
-      rect(cr.left, cr.top, pl, cr.height, PAD, PAD_S, 1);
-      label(String(Math.round(pl)), cr.left + pl / 2, cr.top + cr.height / 2);
+      rect(bounded.left, bounded.top, pl, bounded.height, PAD, PAD_S, 1);
+      label(String(Math.round(pl)), bounded.left + pl / 2, bounded.top + bounded.height / 2);
     }
     if (pr > 0) {
-      rect(cr.right - pr, cr.top, pr, cr.height, PAD, PAD_S, 1);
-      label(String(Math.round(pr)), cr.right - pr / 2, cr.top + cr.height / 2);
+      rect(bounded.right - pr, bounded.top, pr, bounded.height, PAD, PAD_S, 1);
+      label(String(Math.round(pr)), bounded.right - pr / 2, bounded.top + bounded.height / 2);
+    }
+
+    const MARGIN = "rgba(16,185,129,0.14)";
+    const MARGIN_S = "rgba(16,185,129,0.55)";
+    if (mt > 0) {
+      rect(marginBox.left, marginBox.top, marginBox.width, mt, MARGIN, MARGIN_S, 1);
+      label(String(Math.round(mt)), marginBox.left + marginBox.width / 2, marginBox.top + mt / 2);
+    }
+    if (mb > 0) {
+      rect(marginBox.left, bounded.bottom, marginBox.width, mb, MARGIN, MARGIN_S, 1);
+      label(String(Math.round(mb)), marginBox.left + marginBox.width / 2, bounded.bottom + mb / 2);
+    }
+    if (ml > 0) {
+      rect(marginBox.left, marginBox.top + mt, ml, bounded.height, MARGIN, MARGIN_S, 1);
+      label(String(Math.round(ml)), marginBox.left + ml / 2, marginBox.top + mt + bounded.height / 2);
+    }
+    if (mr > 0) {
+      rect(bounded.right, marginBox.top + mt, mr, bounded.height, MARGIN, MARGIN_S, 1);
+      label(String(Math.round(mr)), bounded.right + mr / 2, marginBox.top + mt + bounded.height / 2);
+    }
+
+    if (!isFlex && !isGrid) {
+      return;
     }
 
     const children = Array.from(element.children).filter((child) => {
@@ -193,16 +207,16 @@ export const createLayoutOverlay = (): LayoutOverlayHandle => {
         const aViewport = children[index].getBoundingClientRect();
         const bViewport = children[index + 1].getBoundingClientRect();
         const a = {
-          left: aViewport.left + viewportScroll.x,
-          top: aViewport.top + viewportScroll.y,
-          right: aViewport.right + viewportScroll.x,
-          bottom: aViewport.bottom + viewportScroll.y,
+          left: aViewport.left,
+          top: aViewport.top,
+          right: aViewport.right,
+          bottom: aViewport.bottom,
         };
         const b = {
-          left: bViewport.left + viewportScroll.x,
-          top: bViewport.top + viewportScroll.y,
-          right: bViewport.right + viewportScroll.x,
-          bottom: bViewport.bottom + viewportScroll.y,
+          left: bViewport.left,
+          top: bViewport.top,
+          right: bViewport.right,
+          bottom: bViewport.bottom,
         };
         if (isRow) {
           const x1 = Math.min(a.right, b.right);
@@ -252,10 +266,10 @@ export const createLayoutOverlay = (): LayoutOverlayHandle => {
       const childRects = children.map((child) => {
         const childViewport = child.getBoundingClientRect();
         return {
-          left: childViewport.left + viewportScroll.x,
-          top: childViewport.top + viewportScroll.y,
-          right: childViewport.right + viewportScroll.x,
-          bottom: childViewport.bottom + viewportScroll.y,
+          left: childViewport.left,
+          top: childViewport.top,
+          right: childViewport.right,
+          bottom: childViewport.bottom,
         };
       });
       const xs = [...new Set(childRects.map((childRect) => Math.round(childRect.right)))].sort((a, b) => a - b);
@@ -279,8 +293,8 @@ export const createLayoutOverlay = (): LayoutOverlayHandle => {
             continue;
           }
           const gapLeft = x1 + (whitespace - visualGap) / 2;
-          rect(gapLeft, cr.top + pt, visualGap, cr.height - pt - pb, GAP, GAP_S, 1, "2 2");
-          label(String(Math.round(visualGap)), gapLeft + visualGap / 2, cr.top + cr.height / 2);
+          rect(gapLeft, bounded.top + pt, visualGap, bounded.height - pt - pb, GAP, GAP_S, 1, "2 2");
+          label(String(Math.round(visualGap)), gapLeft + visualGap / 2, bounded.top + bounded.height / 2);
         }
       }
 
@@ -302,8 +316,8 @@ export const createLayoutOverlay = (): LayoutOverlayHandle => {
             continue;
           }
           const gapTop = y1 + (whitespace - visualGap) / 2;
-          rect(cr.left + pl, gapTop, cr.width - pl - pr, visualGap, GAP, GAP_S, 1, "2 2");
-          label(String(Math.round(visualGap)), cr.left + cr.width / 2, gapTop + visualGap / 2);
+          rect(bounded.left + pl, gapTop, bounded.width - pl - pr, visualGap, GAP, GAP_S, 1, "2 2");
+          label(String(Math.round(visualGap)), bounded.left + bounded.width / 2, gapTop + visualGap / 2);
         }
       }
     }
