@@ -2,7 +2,7 @@ import { getDeepTargetFromPoint, isDeepPickEvent } from "../../../lib/deep-pick"
 import type { DistanceHandle } from "./distance.element";
 import { createGridlines } from "./gridlines.element";
 import { createGuideBox } from "./guide-box.element";
-import { ensureGuidesStyles, removeGuidesStyles } from "./guides-styles";
+import { ensureGuidesRoot, ensureGuidesStyles, removeGuidesRoot, removeGuidesStyles } from "./guides-styles";
 import { getTargetRect, isGuidesUiElement, isOffBounds } from "./guides-utils";
 import { clearMeasurements, createMeasurements } from "./measurements";
 
@@ -82,6 +82,7 @@ export const createGuidesController = () => {
   let frozenPairs: FrozenPair[] = [];
   let activeDistances: DistanceHandle[] = [];
   let resizeDebounceId: number | null = null;
+  let guidesRoot: HTMLElement | null = null;
 
   const clearActiveMeasurements = () => {
     if (!activeDistances.length) {
@@ -119,7 +120,7 @@ export const createGuidesController = () => {
 
   const replaceActiveMeasurements = (anchor: Element | Range, target: Element | Range) => {
     clearActiveMeasurements();
-    activeDistances = createMeasurements(anchor, target);
+    activeDistances = createMeasurements(anchor, target, guidesRoot ?? undefined);
   };
 
   const removeFrozenPair = (pair: FrozenPair) => {
@@ -157,7 +158,7 @@ export const createGuidesController = () => {
       applyPairLabelSides(selectedRect, lockedRect, pair.selectedBox, pair.lockedBox);
 
       clearMeasurements(pair.distances);
-      pair.distances = createMeasurements(pair.selectedTarget, pair.lockedTarget);
+      pair.distances = createMeasurements(pair.selectedTarget, pair.lockedTarget, guidesRoot ?? undefined);
       pair.distances.forEach((distance) => {
         distance.setColor(pair.color);
         distance.setVisible(settings.keepPairDistances);
@@ -171,19 +172,19 @@ export const createGuidesController = () => {
 
   const ensureBoxes = () => {
     if (!selectedBox) {
-      selectedBox = createGuideBox("selected");
+      selectedBox = createGuideBox("selected", guidesRoot ?? undefined);
     }
 
     if (!hoverBox) {
-      hoverBox = createGuideBox("hover");
+      hoverBox = createGuideBox("hover", guidesRoot ?? undefined);
     }
 
     if (!lockedBox) {
-      lockedBox = createGuideBox("locked");
+      lockedBox = createGuideBox("locked", guidesRoot ?? undefined);
     }
 
     if (!gridlines) {
-      gridlines = createGridlines();
+      gridlines = createGridlines(guidesRoot ?? undefined);
     }
   };
 
@@ -212,9 +213,9 @@ export const createGuidesController = () => {
       clearActiveMeasurements();
     }
 
-    selectedBox = createGuideBox("selected");
-    lockedBox = createGuideBox("locked");
-    gridlines = createGridlines();
+    selectedBox = createGuideBox("selected", guidesRoot ?? undefined);
+    lockedBox = createGuideBox("locked", guidesRoot ?? undefined);
+    gridlines = createGridlines(guidesRoot ?? undefined);
     state.selected = null;
     state.lockedTarget = null;
   };
@@ -463,12 +464,14 @@ export const createGuidesController = () => {
 
     state.enabled = true;
     ensureGuidesStyles();
+    guidesRoot = ensureGuidesRoot();
     ensureBoxes();
 
     window.addEventListener("mousemove", handleMove, true);
     window.addEventListener("click", handleClick, true);
     window.addEventListener("keydown", handleKeydown);
     window.addEventListener("resize", scheduleResizeRefresh);
+    window.addEventListener("scroll", refreshOnResize, { passive: true, capture: true });
     MOUSE_BLOCK_EVENTS.forEach((type) => {
       window.addEventListener(type, handleMouseBlock, true);
     });
@@ -491,6 +494,7 @@ export const createGuidesController = () => {
     hoverBox = null;
     lockedBox = null;
     gridlines = null;
+    guidesRoot = null;
     frozenPairs.forEach((pair) => removeFrozenPair(pair));
     frozenPairs = [];
     clearActiveMeasurements();
@@ -499,11 +503,13 @@ export const createGuidesController = () => {
       resizeDebounceId = null;
     }
     removeGuidesStyles();
+    removeGuidesRoot();
 
     window.removeEventListener("mousemove", handleMove, true);
     window.removeEventListener("click", handleClick, true);
     window.removeEventListener("keydown", handleKeydown);
     window.removeEventListener("resize", scheduleResizeRefresh);
+    window.removeEventListener("scroll", refreshOnResize, true);
     MOUSE_BLOCK_EVENTS.forEach((type) => {
       window.removeEventListener(type, handleMouseBlock, true);
     });

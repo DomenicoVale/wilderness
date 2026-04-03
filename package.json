@@ -15,6 +15,7 @@
     "compile": "tsc --noEmit",
     "check": "tsc --noEmit",
     "format": "biome check --write .",
+    "format:fix": "biome check --write --unsafe .",
     "rules:generate": "agent-rules",
     "postinstall": "wxt prepare && simple-git-hooks"
   },

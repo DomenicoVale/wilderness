@@ -43,14 +43,14 @@ const getDocumentDimensions = () => {
   };
 };
 
-export const createGridlines = (): GridlinesHandle => {
+export const createGridlines = (mountParent?: HTMLElement): GridlinesHandle => {
   const root = document.createElement("div");
   root.className = "wilderness-gridlines";
 
   const { svg, lineLeft, lineRight, lineTop, lineBottom } = createSvg();
   root.append(svg);
   root.style.display = "none";
-  const parent = document.documentElement ?? document.body;
+  const parent = mountParent ?? document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount gridlines: no document root.");
   } else {

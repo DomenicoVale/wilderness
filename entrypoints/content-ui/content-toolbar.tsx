@@ -1,7 +1,8 @@
 import * as React from "react";
 import { getConsoleCount, subscribeConsoleStore } from "../../lib/console-store";
-import { openCustomToolsEditor } from "../../lib/custom-tools-actions";
-import { toggleActiveCustomToolId, useCustomToolsStore } from "../../lib/custom-tools-store";
+import { openCustomToolsEditor } from "../../lib/custom-tools/actions";
+import { ensureCustomToolBridgeAvailable } from "../../lib/custom-tools/runner";
+import { toggleActiveCustomToolId, useCustomToolsStore } from "../../lib/custom-tools/store";
 import {
   GUIDES_SETTINGS_EVENT,
   INFO_CLEAR_STATE_EVENT,
@@ -267,8 +268,20 @@ export function ContentToolbar() {
       void openCustomToolsEditor();
     }, 0);
   };
-  const toggleCustomTool = (toolId: string) => {
+  const toggleCustomTool = async (toolId: string) => {
     const isActive = activeToolSet.has(toolId);
+    if (!isActive) {
+      const bridgeAvailability = await ensureCustomToolBridgeAvailable();
+      if (!bridgeAvailability.ok) {
+        console.warn(
+          "[wilderness] Custom tool activation is blocked.",
+          bridgeAvailability.error ?? "Unknown custom tool bridge failure."
+        );
+        void openCustomToolsEditor();
+        return;
+      }
+    }
+
     void toggleActiveCustomToolId(toolId, !isActive);
   };
 
@@ -453,7 +466,7 @@ export function ContentToolbar() {
                     key={tool.id}
                     className={`wld-hud-submenu-btn${isActive ? " active" : ""}`}
                     onClick={() => {
-                      toggleCustomTool(tool.id);
+                      void toggleCustomTool(tool.id);
                     }}
                     title={tool.name}
                   >

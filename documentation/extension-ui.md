@@ -6,6 +6,7 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 ## Key Files
 - `entrypoints/content.tsx`: Creates and mounts the shadow root UI.
 - `entrypoints/content-ui/content-toolbar.tsx`: Toolbar React component.
+- `lib/custom-tools/`: Shared custom-tool store, permission helpers, editor actions, bridge runner, and background bridge service.
 - `entrypoints/content-ui/style.css`: Tailwind entrypoint and CSS variables.
 - `entrypoints/content-ui/guides/`: Guides tool overlays and measurement logic.
 - `entrypoints/content-ui/guides/guides_tool.ts`: Injected Guides overlay styling.
@@ -50,13 +51,15 @@ The Wilderness UI is injected into the active page via a WXT content script. It 
 - The extension calls `cleanup()` when a tool is disabled and before setup reruns for the same tool.
 - `On enable` tools are temporary for the current page session: they run once when toggled on, then are cleared on page navigation or extension restart.
 - `On extension load` tools stay active in storage and rerun whenever the extension loads on a page.
-- Custom tool code is executed by the background worker through `userScripts` when available.
-- Browsers without `userScripts` run custom tools through `browser.scripting.executeScript` in `MAIN` world.
+- The background worker registers a persistent `USER_SCRIPT` bridge at `document_start`, and the content script sends setup/cleanup commands to that bridge over DOM events.
+- Custom tool code is evaluated inside the `USER_SCRIPT` world instead of the page world, so strict page CSP rules do not block tool startup.
+- If `userScripts` is unavailable when enabling a custom tool (missing optional permission, missing browser toggle, or unsupported browser state), activation opens the bundled custom tools editor so the user can follow the in-product guidance.
 - A default example custom tool (`Center guides`) is prefilled for new installs; it draws 3px 50%-opacity vertical and horizontal center lines, updates on resize, and removes them in `cleanup()`.
 
 ## Custom Tools Editor
 - The custom tools editor opens in a new extension tab.
 - The editor uses the same mono HUD-inspired styling as the injected toolbar, with bracketed controls and border-only panels.
+- The editor shows a full red permission banner whenever `userScripts` is unavailable; on Firefox builds the button requests the optional permission, and on Chrome builds it opens the extension’s `chrome://extensions` details page so the user can enable `Allow User Scripts`.
 - Existing custom tools are listed at the top of the page; clicking `Edit` loads that tool into the editor below without creating a duplicate.
 - Monaco editor provides JavaScript editing with formatting and validation actions.
 - Validation checks syntax via parser tooling (not `eval` / `new Function`).

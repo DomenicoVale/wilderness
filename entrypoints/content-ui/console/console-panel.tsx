@@ -111,7 +111,7 @@ export function ConsolePanel({ onClose }: ConsolePanelProps) {
   React.useLayoutEffect(() => {
     if (!autoScrollRef.current || !bodyRef.current) return;
     bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
-  }, [entries.length]);
+  }, []);
 
   const fmt = (t: number) =>
     new Date(t).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -129,13 +129,13 @@ export function ConsolePanel({ onClose }: ConsolePanelProps) {
             placeholder="filter..."
             aria-label="Filter console logs"
           />
-          <button className="wld-con-btn" onClick={downloadConsoleLogs} title="Download logs">
+          <button type="button" className="wld-con-btn" onClick={downloadConsoleLogs} title="Download logs">
             [DL]
           </button>
-          <button className="wld-con-btn" onClick={clearConsoleEntries} title="Clear">
+          <button type="button" className="wld-con-btn" onClick={clearConsoleEntries} title="Clear">
             [CLR]
           </button>
-          <button className="wld-con-btn" onClick={onClose} title="Close">
+          <button type="button" className="wld-con-btn" onClick={onClose} title="Close">
             [X]
           </button>
         </div>

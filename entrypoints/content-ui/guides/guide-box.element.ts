@@ -11,7 +11,7 @@ type GuideBoxHandle = {
   remove: () => void;
 };
 
-export const createGuideBox = (variant: "selected" | "hover" | "locked"): GuideBoxHandle => {
+export const createGuideBox = (variant: "selected" | "hover" | "locked", mountParent?: HTMLElement): GuideBoxHandle => {
   const root = document.createElement("div");
   root.className = "wilderness-guide-box";
   root.setAttribute("data-variant", variant);
@@ -27,7 +27,7 @@ export const createGuideBox = (variant: "selected" | "hover" | "locked"): GuideB
 
   root.append(box, widthLabel, heightLabel);
   root.style.display = "none";
-  const parent = document.documentElement ?? document.body;
+  const parent = mountParent ?? document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount guide box: no document root.");
   } else {

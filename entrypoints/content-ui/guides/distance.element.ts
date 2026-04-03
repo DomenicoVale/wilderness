@@ -14,7 +14,7 @@ export type DistancePosition = {
   length: number;
 };
 
-export const createDistance = (): DistanceHandle => {
+export const createDistance = (mountParent?: HTMLElement): DistanceHandle => {
   const root = document.createElement("div");
   root.className = "wilderness-distance";
 
@@ -25,7 +25,7 @@ export const createDistance = (): DistanceHandle => {
   label.className = "wilderness-distance__label";
 
   root.append(line, label);
-  const parent = document.documentElement ?? document.body;
+  const parent = mountParent ?? document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount distance: no document root.");
   } else {

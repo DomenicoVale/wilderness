@@ -123,13 +123,17 @@ const buildMeasurementPositions = (anchorBounds: DOMRect, targetBounds: DOMRect)
   }));
 };
 
-export const createMeasurements = (anchor: Element | Range, target: Element | Range): DistanceHandle[] => {
+export const createMeasurements = (
+  anchor: Element | Range,
+  target: Element | Range,
+  mountParent?: HTMLElement
+): DistanceHandle[] => {
   const anchorBounds = getTargetRect(anchor);
   const targetBounds = getTargetRect(target);
   const positions = buildMeasurementPositions(anchorBounds, targetBounds);
 
   return positions.map((position) => {
-    const measurement = createDistance();
+    const measurement = createDistance(mountParent);
     measurement.setPosition(position);
     return measurement;
   });

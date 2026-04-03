@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import { ensureCustomToolsStore } from "../../lib/custom-tools-store";
+import { ensureCustomToolsStore } from "../../lib/custom-tools/store";
 import { CustomToolsEditor } from "./custom-tools-editor";
 import "./style.css";
 

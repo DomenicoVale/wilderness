@@ -1,4 +1,4 @@
-import { OPEN_CUSTOM_TOOL_EDITOR_MESSAGE } from "./events";
+import { OPEN_CUSTOM_TOOL_EDITOR_MESSAGE } from "./messages";
 
 export const openCustomToolsEditor = async () => {
   try {

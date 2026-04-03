@@ -1,12 +1,23 @@
 const GUIDES_STYLE_ID = "wilderness-guides-styles";
+const GUIDES_ROOT_ID = "wilderness-guides-root";
 const GUIDES_STYLES = `
+#${GUIDES_ROOT_ID} {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2147483646;
+  overflow: visible;
+}
+
 .wilderness-guide-box,
 .wilderness-distance {
   position: absolute;
   left: 0;
   top: 0;
   pointer-events: none;
-  z-index: 2147483647;
   box-sizing: border-box;
 }
 
@@ -70,8 +81,9 @@ const GUIDES_STYLES = `
   position: absolute;
   left: 0;
   top: 0;
+  width: 0;
+  height: 0;
   pointer-events: none;
-  z-index: 2147483647;
   box-sizing: border-box;
   overflow: visible;
 }
@@ -113,4 +125,25 @@ export const removeGuidesStyles = () => {
   }
 
   style.remove();
+};
+
+export const ensureGuidesRoot = (): HTMLElement => {
+  const existing = document.getElementById(GUIDES_ROOT_ID);
+  if (existing instanceof HTMLElement) {
+    return existing;
+  }
+
+  const root = document.createElement("div");
+  root.id = GUIDES_ROOT_ID;
+  const parent = document.documentElement ?? document.body;
+  if (!parent) {
+    console.warn("[Guides] Unable to mount guides root: no document root.");
+  } else {
+    parent.append(root);
+  }
+  return root;
+};
+
+export const removeGuidesRoot = () => {
+  document.getElementById(GUIDES_ROOT_ID)?.remove();
 };

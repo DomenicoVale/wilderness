@@ -42,4 +42,4 @@ export const isOffBounds = (node: DeepTarget | null) => {
   return element === document.documentElement || element === document.body;
 };
 
-export const getTargetRect = (target: Element | Range, space: TargetRectSpace = "document") => getDeepTargetRect(target, space);
+export const getTargetRect = (target: Element | Range, space: TargetRectSpace = "viewport") => getDeepTargetRect(target, space);

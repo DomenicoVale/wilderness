@@ -6,7 +6,7 @@
 import { createRoot } from "react-dom/client";
 import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
 import { createContentEventHandlers } from "../lib/content-events";
-import { runCustomTool } from "../lib/custom-tools-runner";
+import { runCustomTool } from "../lib/custom-tools/runner";
 import {
   type CustomTool,
   clearOnEnableActiveCustomToolIds,
@@ -14,7 +14,7 @@ import {
   getCustomToolsSnapshot,
   subscribeCustomToolsSnapshot,
   waitForCustomToolsReady,
-} from "../lib/custom-tools-store";
+} from "../lib/custom-tools/store";
 import { SET_UI_MESSAGE } from "../lib/events";
 import { ContentToolbar } from "./content-ui/content-toolbar";
 import { createGuidesController } from "./content-ui/guides/guides-tool";
@@ -37,6 +37,7 @@ const STALE_UI_SELECTORS = [
   ".wilderness-layout-overlay",
 ];
 const STALE_STYLE_IDS = ["wilderness-guides-styles", "wilderness-info-styles"] as const;
+const STALE_NODE_IDS = ["wilderness-guides-root"] as const;
 const didCustomToolChange = (previous: CustomTool, next: CustomTool) =>
   previous.updatedAt !== next.updatedAt ||
   previous.name !== next.name ||
@@ -58,6 +59,10 @@ const removeStaleUiArtifacts = () => {
 
   STALE_STYLE_IDS.forEach((styleId) => {
     document.getElementById(styleId)?.remove();
+  });
+
+  STALE_NODE_IDS.forEach((nodeId) => {
+    document.getElementById(nodeId)?.remove();
   });
 };
 

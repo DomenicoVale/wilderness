@@ -5,6 +5,7 @@ import * as prettier from "prettier/standalone";
 import * as React from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { openChromeExtensionsSettingsForCurrentExtension } from "../../lib/custom-tools/permissions";
 import {
   addCustomTool,
   type CustomTool,
@@ -12,8 +13,10 @@ import {
   toggleActiveCustomToolId,
   updateCustomTool,
   useCustomToolsStore,
-} from "../../lib/custom-tools-store";
+} from "../../lib/custom-tools/store";
 import { cn } from "../../lib/utils";
+import { useUserScriptsPermission } from "./use-user-scripts-permission";
+import { UserScriptsPermissionBanner } from "./user-scripts-permission-banner";
 import "monaco-editor/min/vs/editor/editor.main.css";
 
 type ValidationState = {
@@ -80,6 +83,8 @@ loader.config({ paths: { vs: monacoBaseUrl } });
 const getIdleMessage = (tool?: CustomTool | null) => (tool ? `Editing "${tool.name}".` : "Creating a new custom tool.");
 
 export const CustomToolsEditor = () => {
+  const { firefoxBuild, permissionState, requestPermission, showPermissionWarning, missingPermissionMessage } =
+    useUserScriptsPermission();
   const tools = useCustomToolsStore((state) => state.tools);
   const activeToolIds = useCustomToolsStore((state) => state.activeToolIds);
   const status = useCustomToolsStore((state) => state.status);
@@ -120,6 +125,10 @@ export const CustomToolsEditor = () => {
       applyDraft(null);
     }
   }, [applyDraft, selectedToolId, tools]);
+
+  const requestFirefoxPermissionFromEditor = async () => {
+    return await requestPermission();
+  };
 
   const handleEditorMount = (_editor: unknown, monaco: Monaco) => {
     if (!didRegisterToolApiTypes) {
@@ -213,6 +222,28 @@ export const CustomToolsEditor = () => {
       }
 
       const tool = await addCustomTool({ name, code, mode });
+      if (permissionState !== "granted") {
+        applyDraft(tool);
+        if (firefoxBuild) {
+          const granted = await requestFirefoxPermissionFromEditor();
+          setValidation({
+            status: granted ? "valid" : "error",
+            message: granted
+              ? `Saved "${tool.name}". Firefox permission granted and the tool is ready to enable.`
+              : `Saved "${tool.name}". Grant the Firefox custom tool permission before enabling it.`,
+          });
+          if (!granted) {
+            return;
+          }
+        } else {
+          setValidation({
+            status: "error",
+            message: `Saved "${tool.name}". ${missingPermissionMessage}`,
+          });
+          return;
+        }
+      }
+
       await toggleActiveCustomToolId(tool.id, true);
       applyDraft(tool);
       setValidation({
@@ -226,6 +257,27 @@ export const CustomToolsEditor = () => {
       console.warn("[wilderness] Unable to save custom tool.", error);
       setValidation({ status: "error", message: "Failed to save tool." });
     }
+  };
+
+  const handleGrantPermission = async () => {
+    if (!firefoxBuild) {
+      const opened = await openChromeExtensionsSettingsForCurrentExtension();
+      setValidation({
+        status: opened ? "valid" : "error",
+        message: opened
+          ? "Opened chrome://extensions for Wilderness. Enable Allow User Scripts, then return and enable the tool again."
+          : "Unable to open chrome://extensions automatically. Open chrome://extensions, select Wilderness, and enable Allow User Scripts.",
+      });
+      return;
+    }
+
+    const granted = await requestFirefoxPermissionFromEditor();
+    setValidation({
+      status: granted ? "valid" : "error",
+      message: granted
+        ? "Firefox custom tool permission granted. Return to the page and enable the tool again."
+        : "Firefox custom tool permission was not granted.",
+    });
   };
 
   const handleClose = () => {
@@ -305,6 +357,15 @@ export const CustomToolsEditor = () => {
           </Button>
         </div>
       </header>
+
+      {showPermissionWarning ? (
+        <UserScriptsPermissionBanner
+          permissionState={permissionState}
+          message={missingPermissionMessage}
+          onGrantPermission={handleGrantPermission}
+          firefoxBuild={firefoxBuild}
+        />
+      ) : null}
 
       <section className={cn(HUD_PANEL_CLASS_NAME, "mx-4 mt-4 px-4 py-4")}>
         <div className="flex flex-wrap items-center justify-between gap-2">

@@ -1,6 +1,4 @@
 export const SET_UI_MESSAGE = "wilderness:set-ui";
-export const OPEN_CUSTOM_TOOL_EDITOR_MESSAGE = "wilderness:open-custom-tool-editor";
-export const RUN_CUSTOM_TOOL_MESSAGE = "wilderness:run-custom-tool";
 export const TOGGLE_GUIDES_EVENT = "wilderness:toggle-guides";
 export const GUIDES_SETTINGS_EVENT = "wilderness:guides-settings";
 export const TOGGLE_INFO_EVENT = "wilderness:toggle-info";

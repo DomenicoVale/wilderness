@@ -2,7 +2,8 @@
 
 ## Formatting
 - Biome is the formatter.
-- Run `npm run format` to format the repository.
+- Run `npm run format` to format the repository and apply safe fixes.
+- Run `npm run format:fix` to format and apply unsafe auto-fixes (`--unsafe`) when `npm run format` leaves issues behind.
 - A `pre-commit` hook runs the formatter automatically via `simple-git-hooks`.
 - Run `npm run check` after significant changes to validate TypeScript.
 

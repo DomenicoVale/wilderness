@@ -1102,18 +1102,20 @@ const clearPersistedInspectState = async () => {
 const parseTransformFunctionValues = (transform: string, fn: string, fallbackUnit: string): Record<TransformAxis, number> => {
   const output: Record<TransformAxis, number> = { x: 0, y: 0, z: 0 };
   const regex = new RegExp(`${fn}([XYZ])?\\(([^)]*)\\)`, "gi");
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(transform)) !== null) {
+  let match = regex.exec(transform);
+  while (match !== null) {
     const axisToken = (match[1] || "").toLowerCase();
     const axis = axisToken === "x" || axisToken === "y" || axisToken === "z" ? axisToken : "x";
     const first = match[2]?.split(",")[0]?.trim() ?? "0";
     const parsed = parseNumericUnit(first);
     if (!parsed) {
+      match = regex.exec(transform);
       continue;
     }
     if (!parsed.unit || parsed.unit === fallbackUnit) {
       output[axis] = parsed.numeric;
     }
+    match = regex.exec(transform);
   }
   return output;
 };
@@ -1171,6 +1173,46 @@ const serializeTransformState = (state: TransformState) => {
   push3D("rotate", state.rotate, { x: 0, y: 0, z: 0 });
   push3D("skew", state.skew, { x: 0, y: 0, z: 0 });
   return parts.length ? parts.join(" ") : "none";
+};
+
+const TREE_EXPANSION_STORAGE_KEY = "wilderness:tree-expansion";
+
+const loadTreeExpansionState = (): Map<string, boolean> => {
+  try {
+    const raw = sessionStorage.getItem(TREE_EXPANSION_STORAGE_KEY);
+    if (!raw) {
+      return new Map();
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return new Map();
+    }
+    return new Map(
+      Object.entries(parsed as Record<string, unknown>).filter(([, v]) => typeof v === "boolean") as [string, boolean][]
+    );
+  } catch {
+    return new Map();
+  }
+};
+
+let treeExpansionPersistTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const scheduleTreeExpansionPersist = (state: Map<string, boolean>) => {
+  if (treeExpansionPersistTimeout !== null) {
+    clearTimeout(treeExpansionPersistTimeout);
+  }
+  treeExpansionPersistTimeout = setTimeout(() => {
+    treeExpansionPersistTimeout = null;
+    try {
+      const obj: Record<string, boolean> = {};
+      state.forEach((v, k) => {
+        obj[k] = v;
+      });
+      sessionStorage.setItem(TREE_EXPANSION_STORAGE_KEY, JSON.stringify(obj));
+    } catch {
+      // sessionStorage may be unavailable in restricted contexts
+    }
+  }, 80);
 };
 
 const createInfoPanel = ({
@@ -1333,7 +1375,7 @@ const createInfoPanel = ({
   let leftDragOffsetY = 0;
   let onPreviewHover: ((element: Element | null) => void) | null = null;
   let currentTarget: Element | null = null;
-  const treeExpansionState = new Map<string, boolean>();
+  const treeExpansionState = loadTreeExpansionState();
   const modifiedBySelector = new Map<string, Map<string, string>>();
   const textBySelector = new Map<string, { textContent: string; originalTextContent: string }>();
   const TREE_NODE_RENDER_LIMIT = 10000;
@@ -1849,6 +1891,7 @@ const createInfoPanel = ({
         treeExpansionState.set(buildSelectorForElement(node), true);
       }
     });
+    scheduleTreeExpansionPersist(treeExpansionState);
   };
 
   const centerActiveTreeItem = () => {
@@ -1861,6 +1904,88 @@ const createInfoPanel = ({
     const itemRect = activeItem.getBoundingClientRect();
     treeList.scrollTop += itemRect.top - listRect.top - (listRect.height / 2 - itemRect.height / 2);
     treeList.scrollLeft += itemRect.left - listRect.left - (listRect.width / 2 - itemRect.width / 2);
+  };
+
+  const renderTreeListInPlace = (preserveScroll: boolean) => {
+    const selected = _currentTreeTarget;
+    if (!selected) {
+      return;
+    }
+    const scrollTop = treeList.scrollTop;
+    const scrollLeft = treeList.scrollLeft;
+    treeList.innerHTML = "";
+
+    const renderNode = (node: Element, depth: number, count: { n: number }) => {
+      if (count.n >= TREE_NODE_RENDER_LIMIT) {
+        return;
+      }
+      count.n += 1;
+      const children = getTreeChildren(node);
+      const hasChildren = children.length > 0;
+      const key = buildSelectorForElement(node);
+      const expanded = node === selected ? true : (treeExpansionState.get(key) ?? true);
+      if (hasChildren) {
+        treeExpansionState.set(key, expanded);
+      }
+
+      const row = document.createElement("div");
+      row.className = "wilderness-inspect-tree__row";
+      row.style.paddingLeft = `${depth * 14 + 6}px`;
+
+      const twisty = document.createElement("button");
+      twisty.type = "button";
+      twisty.className = "wilderness-inspect-tree__twisty";
+      if (hasChildren) {
+        twisty.textContent = expanded ? "▾" : "▸";
+        twisty.setAttribute("aria-label", expanded ? "Collapse tree node" : "Expand tree node");
+        twisty.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          treeExpansionState.set(key, !expanded);
+          scheduleTreeExpansionPersist(treeExpansionState);
+          renderTreeListInPlace(true);
+        });
+      } else {
+        twisty.textContent = " ";
+        twisty.disabled = true;
+        twisty.setAttribute("data-empty", "true");
+      }
+
+      const treeButton = document.createElement("button");
+      treeButton.type = "button";
+      treeButton.className = "wilderness-inspect-tree__item";
+      const nodeLabel = getTreeLabel(node);
+      treeButton.textContent = nodeLabel.length > 220 ? `${nodeLabel.slice(0, 220)}…` : nodeLabel;
+      if (node === selected) {
+        treeButton.setAttribute("data-active", "true");
+      }
+      treeButton.addEventListener("click", () => {
+        onTreeSelect?.(node);
+      });
+      treeButton.addEventListener("mouseenter", () => {
+        onPreviewHover?.(node);
+      });
+      treeButton.addEventListener("mouseleave", () => {
+        onPreviewHover?.(null);
+      });
+
+      row.append(twisty, treeButton);
+      treeList.append(row);
+
+      if (hasChildren && expanded) {
+        children.forEach((child) => renderNode(child, depth + 1, count));
+      }
+    };
+
+    const treeRoot = document.body ?? document.documentElement;
+    renderNode(treeRoot, 0, { n: 0 });
+
+    if (preserveScroll) {
+      treeList.scrollTop = scrollTop;
+      treeList.scrollLeft = scrollLeft;
+    } else {
+      centerActiveTreeItem();
+    }
   };
 
   const consumeWheelInsidePanel = (panel: HTMLElement) => {
@@ -2899,86 +3024,7 @@ const createInfoPanel = ({
       const isFlexContainer = displayMode.includes("flex");
       const isGridContainer = displayMode.includes("grid");
 
-      const renderTreeNode = (node: Element, depth: number, selected: Element, rendered: { count: number }) => {
-        if (rendered.count >= TREE_NODE_RENDER_LIMIT) {
-          return;
-        }
-        rendered.count += 1;
-        const children = getTreeChildren(node);
-        const hasChildren = children.length > 0;
-        const key = buildSelectorForElement(node);
-        const expanded = node === selected ? true : (treeExpansionState.get(key) ?? true);
-        if (hasChildren) {
-          treeExpansionState.set(key, expanded);
-        }
-
-        const row = document.createElement("div");
-        row.className = "wilderness-inspect-tree__row";
-        row.style.paddingLeft = `${depth * 14 + 6}px`;
-
-        const twisty = document.createElement("button");
-        twisty.type = "button";
-        twisty.className = "wilderness-inspect-tree__twisty";
-        if (hasChildren) {
-          twisty.textContent = expanded ? "▾" : "▸";
-          twisty.setAttribute("aria-label", expanded ? "Collapse tree node" : "Expand tree node");
-          twisty.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            treeExpansionState.set(key, !expanded);
-            treeList.setAttribute("data-preserve-scroll", "true");
-            onTreeSelect?.(selected);
-          });
-        } else {
-          twisty.textContent = " ";
-          twisty.disabled = true;
-          twisty.setAttribute("data-empty", "true");
-        }
-
-        const treeButton = document.createElement("button");
-        treeButton.type = "button";
-        treeButton.className = "wilderness-inspect-tree__item";
-        const nodeLabel = getTreeLabel(node);
-        treeButton.textContent = nodeLabel.length > 220 ? `${nodeLabel.slice(0, 220)}…` : nodeLabel;
-        if (node === selected) {
-          treeButton.setAttribute("data-active", "true");
-        }
-        treeButton.addEventListener("click", () => {
-          onTreeSelect?.(node);
-        });
-        treeButton.addEventListener("mouseenter", () => {
-          onPreviewHover?.(node);
-        });
-        treeButton.addEventListener("mouseleave", () => {
-          onPreviewHover?.(null);
-        });
-
-        row.append(twisty, treeButton);
-        treeList.append(row);
-
-        if (!hasChildren || !expanded) {
-          return;
-        }
-
-        children.forEach((child) => renderTreeNode(child, depth + 1, selected, rendered));
-      };
-
-      const rendered = { count: 0 };
-      const treeRoot = document.body ?? document.documentElement;
-      const treeScrollTopBefore = treeList.scrollTop;
-      const treeScrollLeftBefore = treeList.scrollLeft;
-      renderTreeNode(treeRoot, 0, target, rendered);
-      const preserveTreeScroll = treeList.getAttribute("data-preserve-scroll") === "true";
-      if (preserveTreeScroll) {
-        treeList.removeAttribute("data-preserve-scroll");
-      }
-      const shouldCenterTreeSelection = !preserveScroll && !preserveTreeScroll;
-      if (shouldCenterTreeSelection) {
-        centerActiveTreeItem();
-      } else {
-        treeList.scrollTop = treeScrollTopBefore;
-        treeList.scrollLeft = treeScrollLeftBefore;
-      }
+      renderTreeListInPlace(preserveScroll);
 
       const mediaMatch = findClosestMediaMatch(target);
       if (!mediaMatch) {

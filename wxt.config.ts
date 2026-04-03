@@ -31,7 +31,13 @@ export default defineConfig({
     action: {
       default_title: "wilderness",
     },
-    permissions: ["activeTab", "scripting", "storage", "tabs", "userScripts"],
+    permissions:
+      browser === "firefox"
+        ? ["activeTab", "scripting", "storage", "tabs"]
+        : ["activeTab", "scripting", "storage", "tabs", "userScripts"],
+    ...(browser === "firefox" && {
+      optional_permissions: ["userScripts"],
+    }),
     host_permissions: ["<all_urls>"],
     ...(browser === "firefox" && {
       browser_specific_settings: {
