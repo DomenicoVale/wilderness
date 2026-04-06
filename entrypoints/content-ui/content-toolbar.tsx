@@ -1,5 +1,6 @@
+import { TriangleAlert } from "lucide-react";
 import * as React from "react";
-import { getConsoleCount, subscribeConsoleStore } from "../../lib/console-store";
+import { type ConsoleEntry, formatArg, getConsoleEntries, subscribeConsoleStore } from "../../lib/console-store";
 import { openCustomToolsEditor } from "../../lib/custom-tools/actions";
 import { ensureCustomToolBridgeAvailable } from "../../lib/custom-tools/runner";
 import { toggleActiveCustomToolId, useCustomToolsStore } from "../../lib/custom-tools/store";
@@ -13,180 +14,63 @@ import {
   TOGGLE_INFO_EVENT,
 } from "../../lib/events";
 import { ConsolePanel } from "./console/console-panel";
-import type { InfoSettings } from "./info/info-tool";
+import type { GuidesSettings } from "./guides/guides-tool";
+import type { InfoSettings } from "./info/core";
 import { getToolState, setToolState, subscribeToolState } from "./tool-state";
-import type { GuidesSettings } from "./toolbar/guides-toggle-button";
 
-const HUD_STYLES = `
-  @keyframes hudLineGrow {
-    0% { clip-path: inset(0 50% 0 50%); opacity: 1; }
-    100% { clip-path: inset(0 0 0 0); opacity: 1; }
+const ERROR_BUBBLE_TEXT_MAX_LENGTH = 100;
+const ERROR_BUBBLE_VISIBLE_MS = 1500;
+const ERROR_BUBBLE_POP_MS = 180;
+const ERROR_BUBBLE_VERTICAL_START = 8;
+
+type ErrorBubble = {
+  id: string;
+  message: string;
+};
+
+const isErrorEntry = (entry: ConsoleEntry) => entry.method === "error" || entry.isUncaught || entry.isUnhandledRejection;
+
+const summarizeConsoleError = (entry: ConsoleEntry) => {
+  const firstErrorArg = entry.args.find((arg) => arg.type === "error");
+  const joined = firstErrorArg ? formatArg(firstErrorArg) : entry.args.map((arg) => formatArg(arg)).join(" ");
+  const normalized = joined.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return "Unknown error";
   }
-  @keyframes hudItemIn {
-    0% { opacity: 0; transform: translateY(-4px); }
-    100% { opacity: 1; transform: translateY(0); }
+  if (normalized.length <= ERROR_BUBBLE_TEXT_MAX_LENGTH) {
+    return normalized;
   }
-  .wld-hud {
-    position: fixed;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2147483647;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 11px;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-  .wld-hud-bar {
-    pointer-events: all;
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: rgba(0,0,0,0.75);
-    border: 1px solid rgba(255,255,255,0.15);
-    padding: 2px 4px;
-    position: relative;
-  }
-  .wld-hud-line {
-    height: 1px;
-    background: rgba(255,255,255,0.4);
-    width: 120px;
-    animation: hudLineGrow 0.15s ease-out forwards;
-    pointer-events: none;
-  }
-  .wld-hud-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 11px;
-    padding: 2px 4px;
-    color: #e0e0e0;
-    white-space: nowrap;
-    user-select: none;
-    opacity: 0;
-    animation: hudItemIn 0.12s ease-out forwards;
-    letter-spacing: 0.02em;
-  }
-  .wld-hud-btn:hover {
-    color: #ffffff;
-    background: rgba(255,255,255,0.08);
-  }
-  .wld-hud-btn.active {
-    color: #00ff88;
-  }
-  .wld-hud-btn.active:hover {
-    color: #33ffaa;
-  }
-  .wld-hud-sep {
-    color: rgba(255,255,255,0.2);
-    font-size: 11px;
-    padding: 0 1px;
-    pointer-events: none;
-    opacity: 0;
-    animation: hudItemIn 0.12s ease-out forwards;
-    user-select: none;
-  }
-  .wld-hud-collapse {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 11px;
-    color: #e0e0e0;
-    padding: 2px 6px;
-    user-select: none;
-    letter-spacing: 0.02em;
-  }
-  .wld-hud-collapse:hover { color: #fff; background: rgba(255,255,255,0.08); }
-  .wld-hud-tools-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  .wld-hud-submenu {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 280px;
-    max-width: 320px;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(0,0,0,0.92);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.45);
-    padding: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    z-index: 1;
-  }
-  .wld-hud-submenu-section {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .wld-hud-submenu-title {
-    color: rgba(255,255,255,0.65);
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 2px 4px;
-    user-select: none;
-  }
-  .wld-hud-submenu-divider {
-    border: 0;
-    border-top: 1px solid rgba(255,255,255,0.14);
-    margin: 0;
-  }
-  .wld-hud-submenu-btn {
-    width: 100%;
-    background: none;
-    border: none;
-    color: #e0e0e0;
-    font-family: inherit;
-    font-size: 11px;
-    letter-spacing: 0.02em;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    cursor: pointer;
-    text-align: left;
-  }
-  .wld-hud-submenu-btn:hover {
-    color: #fff;
-    background: rgba(255,255,255,0.08);
-  }
-  .wld-hud-submenu-btn.active {
-    color: #00ff88;
-  }
-  .wld-hud-submenu-btn.active:hover {
-    color: #33ffaa;
-  }
-  .wld-hud-submenu-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .wld-hud-submenu-state {
-    flex: 0 0 auto;
-    font-size: 10px;
-    color: rgba(255,255,255,0.7);
-  }
-  .wld-hud-submenu-btn.active .wld-hud-submenu-state {
-    color: inherit;
-  }
-  .wld-hud-submenu-empty {
-    color: rgba(255,255,255,0.5);
-    font-size: 10px;
-    padding: 4px;
-    user-select: none;
-  }
-`;
+  return `${normalized.slice(0, ERROR_BUBBLE_TEXT_MAX_LENGTH - 1)}…`;
+};
+
+function ErrorBubbleToast({ bubble, onDismiss }: { bubble: ErrorBubble; onDismiss: (id: string) => void }) {
+  const [leaving, setLeaving] = React.useState(false);
+
+  React.useEffect(() => {
+    const leaveTimeout = window.setTimeout(() => {
+      setLeaving(true);
+    }, ERROR_BUBBLE_VISIBLE_MS);
+    const removeTimeout = window.setTimeout(() => {
+      onDismiss(bubble.id);
+    }, ERROR_BUBBLE_VISIBLE_MS + ERROR_BUBBLE_POP_MS);
+
+    return () => {
+      window.clearTimeout(leaveTimeout);
+      window.clearTimeout(removeTimeout);
+    };
+  }, [bubble.id, onDismiss]);
+
+  return (
+    <div
+      className="wld-hud-error-bubble"
+      data-state={leaving ? "leaving" : "visible"}
+      style={{ top: `calc(100% + ${ERROR_BUBBLE_VERTICAL_START}px)` }}
+    >
+      <TriangleAlert className="wld-hud-error-bubble-icon" aria-hidden="true" />
+      <span className="wld-hud-error-bubble-text">{bubble.message}</span>
+    </div>
+  );
+}
 
 const isEventWithinNode = (event: Event, node: Node | null) => {
   if (!node) {
@@ -204,7 +88,8 @@ const isEventWithinNode = (event: Event, node: Node | null) => {
 
 export function ContentToolbar() {
   const toolState = React.useSyncExternalStore(subscribeToolState, getToolState);
-  const consoleCount = React.useSyncExternalStore(subscribeConsoleStore, getConsoleCount);
+  const consoleEntries = React.useSyncExternalStore(subscribeConsoleStore, getConsoleEntries);
+  const consoleCount = React.useMemo(() => consoleEntries.length, [consoleEntries]);
   const tools = useCustomToolsStore((state) => state.tools);
   const [guidesSettings, setGuidesSettings] = React.useState<GuidesSettings>({
     alwaysShowDimensions: false,
@@ -220,8 +105,11 @@ export function ContentToolbar() {
   const [expanded, setExpanded] = React.useState(true);
   const [toolsMenuOpen, setToolsMenuOpen] = React.useState(false);
   const [animKey, setAnimKey] = React.useState(0);
+  const [errorBubbles, setErrorBubbles] = React.useState<ErrorBubble[]>([]);
   const toolsMenuRef = React.useRef<HTMLDivElement | null>(null);
   const toolsTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const bubbleIdRef = React.useRef(0);
+  const consoleEntryCountRef = React.useRef(consoleEntries.length);
 
   const handleConsoleClose = () => setToolState({ consolePanelOpen: false });
 
@@ -318,6 +206,36 @@ export function ContentToolbar() {
     }
   }, [expanded]);
 
+  React.useEffect(() => {
+    if (consoleEntries.length < consoleEntryCountRef.current) {
+      consoleEntryCountRef.current = 0;
+      setErrorBubbles([]);
+    }
+
+    const nextEntries = consoleEntries.slice(consoleEntryCountRef.current);
+    if (nextEntries.length === 0) {
+      consoleEntryCountRef.current = consoleEntries.length;
+      return;
+    }
+
+    const errorEntries = nextEntries.filter(isErrorEntry);
+    if (errorEntries.length > 0) {
+      const latestEntry = errorEntries[errorEntries.length - 1];
+      setErrorBubbles([
+        {
+          id: `error-bubble-${bubbleIdRef.current++}`,
+          message: summarizeConsoleError(latestEntry),
+        },
+      ]);
+    }
+
+    consoleEntryCountRef.current = consoleEntries.length;
+  }, [consoleEntries]);
+
+  const dismissErrorBubble = React.useCallback((id: string) => {
+    setErrorBubbles((current) => current.filter((bubble) => bubble.id !== id));
+  }, []);
+
   const delays = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390];
   const items: React.ReactNode[] = [];
   let idx = 0;
@@ -384,13 +302,18 @@ export function ContentToolbar() {
   );
   items.push(sep());
   items.push(
-    btn(
-      `[CONSOLE${toolState.consolePanelOpen ? ":ON" : ""}${consoleCount > 0 ? `(${consoleCount})` : ""}]`,
-      toolState.consolePanelOpen,
-      toggleConsole,
-      "console",
-      "Toggle console panel"
-    )
+    <div key="console-wrap" className="wld-hud-console-wrap">
+      {btn(
+        `[CONSOLE${toolState.consolePanelOpen ? ":ON" : ""}${consoleCount > 0 ? `(${consoleCount})` : ""}]`,
+        toolState.consolePanelOpen,
+        toggleConsole,
+        "console",
+        "Toggle console panel"
+      )}
+      {errorBubbles.map((bubble) => (
+        <ErrorBubbleToast key={bubble.id} bubble={bubble} onDismiss={dismissErrorBubble} />
+      ))}
+    </div>
   );
   if (toolState.guidesEnabled) {
     items.push(sep());
@@ -502,7 +425,6 @@ export function ContentToolbar() {
 
   return (
     <>
-      <style>{HUD_STYLES}</style>
       {toolState.consolePanelOpen ? <ConsolePanel onClose={handleConsoleClose} /> : null}
       <div className="wld-hud">
         {!expanded ? (

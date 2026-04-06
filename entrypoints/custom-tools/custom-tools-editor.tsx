@@ -66,15 +66,63 @@ defineTool({
 `;
 const PRETTIER_PLUGINS = [prettierBabel, prettierEstree];
 const HUD_BUTTON_CLASS_NAME =
-  "h-7 rounded-none border-0 bg-transparent px-2 font-mono text-[11px] font-normal tracking-[0.02em] text-[#e0e0e0] transition-none hover:bg-white/10 hover:text-white";
+  "h-7 rounded-none border-0 bg-transparent px-2 font-mono text-[11px] font-normal tracking-[0.02em] text-[#e0e0e0] transition-none hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-white focus-visible:outline-offset-0 focus-visible:ring-0";
 const HUD_ACTIVE_BUTTON_CLASS_NAME = "text-[#00ff88] hover:text-[#33ffaa]";
 const HUD_INPUT_CLASS_NAME =
-  "h-8 rounded-none border-white/15 bg-transparent px-2 font-mono text-[11px] tracking-[0.02em] text-[#e0e0e0] shadow-none placeholder:text-white/35 focus-visible:ring-1 focus-visible:ring-white/25";
+  "h-8 rounded-none border-white/15 bg-transparent px-2 font-mono text-[11px] tracking-[0.02em] text-[#e0e0e0] shadow-none placeholder:text-white/35 focus-visible:outline focus-visible:outline-1 focus-visible:outline-white focus-visible:outline-offset-0 focus-visible:ring-0";
 const HUD_PANEL_CLASS_NAME = "border border-white/15 bg-black/85";
 const MODE_LABELS: Record<CustomToolMode, string> = {
-  "on-enable": "[ON ENABLE]",
-  "on-extension-load": "[ON EXTENSION LOAD]",
+  "on-enable": "ON ENABLE",
+  "on-extension-load": "ON EXTENSION LOAD",
 };
+const AI_PROMPT_GUIDE_TEMPLATE = `You are writing a Wilderness custom tool.
+
+Return JavaScript only. No markdown fences. No imports.
+
+Runtime mount model (must follow):
+1. The extension evaluates this code in a USER_SCRIPT bridge and provides defineTool globally.
+2. Call defineTool({ setup({ beforePageLoad }), cleanup() }).
+3. setup can run multiple times; cleanup is called before reruns and when the tool is disabled.
+4. beforePageLoad is true when document.readyState === "loading".
+5. "On enable" tools are temporary for the current page session. "On extension load" tools rerun on extension/page load.
+
+Implementation requirements:
+- Make setup idempotent (remove old nodes/listeners/timers before adding new ones).
+- Keep DOM writes scoped with stable IDs/classes.
+- Store references needed by cleanup (listeners, observers, timers, created nodes).
+- cleanup must fully undo setup side effects.
+- Use safe fallbacks for mount points: (document.body ?? document.documentElement).
+- Avoid touching extension UI nodes or assuming framework helpers.
+
+Template:
+const ROOT_ID = "my-tool-root";
+let teardown = null;
+
+defineTool({
+  setup({ beforePageLoad }) {
+    void beforePageLoad;
+    this.cleanup();
+
+    const root = document.createElement("div");
+    root.id = ROOT_ID;
+    (document.body ?? document.documentElement)?.append(root);
+
+    const onResize = () => {};
+    window.addEventListener("resize", onResize, { passive: true });
+
+    teardown = () => {
+      window.removeEventListener("resize", onResize);
+      root.remove();
+    };
+  },
+  cleanup() {
+    if (typeof teardown === "function") {
+      teardown();
+      teardown = null;
+    }
+    document.getElementById(ROOT_ID)?.remove();
+  },
+});`;
 let didRegisterToolApiTypes = false;
 
 const monacoBaseUrl = browser.runtime.getURL("/custom-tools.html").replace("custom-tools.html", "monaco/vs");
@@ -93,6 +141,7 @@ export const CustomToolsEditor = () => {
   const [name, setName] = React.useState("");
   const [code, setCode] = React.useState(DEFAULT_CODE);
   const [mode, setMode] = React.useState<CustomToolMode>(DEFAULT_MODE);
+  const [aiGuideOpen, setAiGuideOpen] = React.useState(false);
   const [validation, setValidation] = React.useState<ValidationState>({
     status: "idle",
     message: getIdleMessage(),
@@ -125,6 +174,23 @@ export const CustomToolsEditor = () => {
       applyDraft(null);
     }
   }, [applyDraft, selectedToolId, tools]);
+
+  React.useEffect(() => {
+    if (!aiGuideOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAiGuideOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [aiGuideOpen]);
 
   const requestFirefoxPermissionFromEditor = async () => {
     return await requestPermission();
@@ -287,19 +353,19 @@ export const CustomToolsEditor = () => {
   const selectedTool = selectedToolId ? (tools.find((tool) => tool.id === selectedToolId) ?? null) : null;
   const validationToneClassName =
     validation.status === "error" ? "text-[#fca5a5]" : validation.status === "valid" ? "text-[#00ff88]" : "text-white/65";
-  const editorStatusLabel = selectedTool ? "[EDIT TOOL]" : "[NEW TOOL]";
+  const editorStatusLabel = selectedTool ? "EDIT TOOL" : "NEW TOOL";
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[rgba(0,0,0,0.94)] font-mono text-[#e0e0e0]">
       <header className={cn(HUD_PANEL_CLASS_NAME, "m-4 mb-0 flex flex-wrap items-center justify-between gap-3 px-4 py-3")}>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">[CUSTOM TOOLS / EDITOR]</div>
+          <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">CUSTOM TOOLS / EDITOR</div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] tracking-[0.02em]">
             <span className="text-[#00ff88]">{editorStatusLabel}</span>
-            {selectedTool ? <span className="truncate text-white/65">[{selectedTool.name}]</span> : null}
+            {selectedTool ? <span className="truncate text-white/65">{selectedTool.name}</span> : null}
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-2 text-[11px] tracking-[0.02em]">
-            <span className="shrink-0 text-white/55">[NAME]</span>
+            <span className="shrink-0 text-white/55">NAME:</span>
             <Input
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -340,6 +406,15 @@ export const CustomToolsEditor = () => {
           <Button
             size="sm"
             variant="ghost"
+            onClick={() => setAiGuideOpen(true)}
+            aria-label="Open AI prompt guide"
+            className={HUD_BUTTON_CLASS_NAME}
+          >
+            [AI PROMPT GUIDE]
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
             onClick={handleClose}
             aria-label="Close custom tools editor"
             className={HUD_BUTTON_CLASS_NAME}
@@ -369,9 +444,9 @@ export const CustomToolsEditor = () => {
 
       <section className={cn(HUD_PANEL_CLASS_NAME, "mx-4 mt-4 px-4 py-4")}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">[CUSTOM TOOL LIST]</div>
+          <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">CUSTOM TOOL LIST</div>
           <div className="text-[10px] uppercase tracking-[0.08em] text-white/45">
-            {status === "loading" ? "[LOADING]" : `[${tools.length} TOOLS]`}
+            {status === "loading" ? "LOADING" : `${tools.length} TOOLS`}
           </div>
         </div>
 
@@ -413,7 +488,7 @@ export const CustomToolsEditor = () => {
             })}
           </div>
         ) : (
-          <div className="mt-3 text-[11px] tracking-[0.02em] text-white/55">[NO CUSTOM TOOLS YET] Create one below.</div>
+          <div className="mt-3 text-[11px] tracking-[0.02em] text-white/55">NO CUSTOM TOOLS YET. Create one below.</div>
         )}
       </section>
 
@@ -421,7 +496,7 @@ export const CustomToolsEditor = () => {
         <div className={cn(HUD_PANEL_CLASS_NAME, "flex min-h-0 min-w-0 flex-1 flex-col")}>
           <div className="border-b border-white/15 px-4 py-3 text-[11px] tracking-[0.02em]">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-white/55">[RUN MODE]</span>
+              <span className="text-white/55">RUN MODE:</span>
               <Button
                 size="sm"
                 variant="ghost"
@@ -443,7 +518,7 @@ export const CustomToolsEditor = () => {
             </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.08em] text-white/45">
-              <span>[SETUP TIMING]</span>
+              <span>SETUP TIMING:</span>
               <span className="normal-case tracking-[0.02em] text-white/65">
                 `beforePageLoad` is `true` while the document is still loading, otherwise `false`.
               </span>
@@ -477,7 +552,7 @@ export const CustomToolsEditor = () => {
 
         <aside className={cn(HUD_PANEL_CLASS_NAME, "flex w-[380px] min-w-[340px] flex-col overflow-auto")}>
           <section className="border-b border-white/15 px-4 py-4">
-            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">[FLOW]</div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">FLOW:</div>
             <div className="mt-2 space-y-2 text-[11px] leading-5 tracking-[0.02em] text-white/70">
               <p>
                 Use <span className="text-[#00ff88]">[NEW TOOL]</span> to start a blank draft.
@@ -491,7 +566,7 @@ export const CustomToolsEditor = () => {
           </section>
 
           <section className="border-b border-white/15 px-4 py-4">
-            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">[API]</div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">API:</div>
             <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words text-[11px] leading-5 text-[#00ff88]">{`defineTool({
   setup({ beforePageLoad }) {},
   cleanup() {},
@@ -499,7 +574,7 @@ export const CustomToolsEditor = () => {
           </section>
 
           <section className="border-b border-white/15 px-4 py-4 text-[11px] leading-5 tracking-[0.02em]">
-            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">[ON ENABLE]</div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">ON ENABLE:</div>
             <p className="mt-2 text-white/70">
               Runs <span className="text-[#00ff88]">setup</span> once when you turn it on for the current page session.
             </p>
@@ -509,7 +584,7 @@ export const CustomToolsEditor = () => {
           </section>
 
           <section className="border-b border-white/15 px-4 py-4 text-[11px] leading-5 tracking-[0.02em]">
-            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">[ON EXTENSION LOAD]</div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">ON EXTENSION LOAD:</div>
             <p className="mt-2 text-white/70">
               Stays active in storage and reruns <span className="text-[#00ff88]">setup</span> whenever the extension loads on a
               page.
@@ -520,7 +595,7 @@ export const CustomToolsEditor = () => {
           </section>
 
           <section className="px-4 py-4 text-[11px] leading-5 tracking-[0.02em]">
-            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">[CLEANUP]</div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-white/55">CLEANUP:</div>
             <p className="mt-2 text-white/70">
               The extension calls <span className="text-[#00ff88]">cleanup</span> when a tool turns off and before setup reruns,
               so anything you append to the page should be removable from there.
@@ -528,6 +603,49 @@ export const CustomToolsEditor = () => {
           </section>
         </aside>
       </div>
+      {aiGuideOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/80"
+            onMouseDown={() => setAiGuideOpen(false)}
+            aria-label="Close AI prompt guide"
+          />
+          <section
+            className={cn(
+              HUD_PANEL_CLASS_NAME,
+              "relative z-10 flex max-h-[85vh] w-full max-w-4xl flex-col bg-[rgba(0,0,0,0.94)]"
+            )}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-prompt-guide-title"
+          >
+            <div className="flex items-center justify-between border-b border-white/15 px-4 py-3">
+              <h2 id="ai-prompt-guide-title" className="text-[11px] uppercase tracking-[0.08em] text-white/75">
+                AI PROMPT GUIDE:
+              </h2>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAiGuideOpen(false)}
+                aria-label="Close AI prompt guide"
+                className={HUD_BUTTON_CLASS_NAME}
+              >
+                [CLOSE]
+              </Button>
+            </div>
+            <div className="space-y-3 overflow-y-auto px-4 py-4 text-[11px] leading-5 tracking-[0.02em] text-white/75">
+              <p>
+                Use this as your base prompt when asking an AI to write a custom tool for Wilderness. It mirrors how the extension
+                mounts and reruns tools in the current implementation.
+              </p>
+              <pre className="overflow-x-auto whitespace-pre-wrap break-words border border-white/15 bg-black/60 p-3 text-[#00ff88]">
+                {AI_PROMPT_GUIDE_TEMPLATE}
+              </pre>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 };

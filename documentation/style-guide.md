@@ -46,6 +46,8 @@ Never use proportional fonts in injected UI. Labels, buttons, and readouts are a
 ## Interactive Elements
 
 Buttons use bracket notation: `[LABEL]` or `[LABEL:STATE]`.
+Section headings are plain uppercase text (for example, `SETUP TIMING:`), not bracketed labels.  
+Bracketed non-interactive labels are reserved for status tags (`[STATUS]`, `[ERROR]`, `[WARNING]`, etc.).
 
 ```
 [GUIDES:OFF]  →  inactive, default text color

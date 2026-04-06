@@ -1,5 +1,5 @@
 import type { createGuidesController, GuidesSettings } from "../entrypoints/content-ui/guides/guides-tool";
-import type { createInfoController, InfoSettings } from "../entrypoints/content-ui/info/info-tool";
+import type { createInfoController, InfoSettings } from "../entrypoints/content-ui/info/core";
 import { setToolState } from "../entrypoints/content-ui/tool-state";
 import {
   GUIDES_SETTINGS_EVENT,
@@ -144,8 +144,6 @@ export const createContentEventHandlers = ({
 
   /*
    * Keyboard Shortcuts
-   * TODO: move global keyboard shortcuts to separate file
-   *
    * i: Toggle Info mode.
    * g: Toggle Guides mode.
    * c: Toggle Console panel.

@@ -27,3 +27,14 @@ The extension only renders injected UI. Do not add popup, options, or other exte
 ## File Naming
 - Use kebab-case for new file names (e.g., `my-file.ts`).
 
+## File Size & Modularity
+- Keep every source file at or below **700 LOC**.
+- If a change would push a file above 700 LOC, split the feature into focused modules first instead of extending the large file.
+- When touching an existing oversized file, extract the touched area into smaller modules where practical before adding more logic.
+
+## DRY & Extension JavaScript Best Practices
+- Reuse existing helpers before adding new ones; avoid copy-paste logic and duplicated constants.
+- Keep extension entrypoints thin: orchestration in entrypoints, reusable logic in `lib/` or feature modules.
+- Treat listener/timer/observer lifecycle as first-class: every setup path must have a reliable cleanup path.
+- Avoid risky dynamic execution patterns in extension code paths unless explicitly required by the architecture (for this repo, custom tool execution is isolated to the dedicated USER_SCRIPT bridge flow).
+

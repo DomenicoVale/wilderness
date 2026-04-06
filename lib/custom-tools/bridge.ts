@@ -12,7 +12,7 @@ export const CUSTOM_TOOL_BRIDGE_COMMAND_EVENT = "wilderness:custom-tool-command"
 export const CUSTOM_TOOL_BRIDGE_RESULT_EVENT = "wilderness:custom-tool-result";
 export const CUSTOM_TOOL_BRIDGE_READY_ATTRIBUTE = "data-wilderness-custom-tool-bridge";
 export const CUSTOM_TOOL_BRIDGE_READY_VALUE = "ready";
-export const CUSTOM_TOOL_BRIDGE_TIMEOUT_MS = 1500;
+const CUSTOM_TOOL_BRIDGE_TIMEOUT_MS = 1500;
 
 export const isCustomToolBridgeReady = () =>
   document.documentElement?.getAttribute(CUSTOM_TOOL_BRIDGE_READY_ATTRIBUTE) === CUSTOM_TOOL_BRIDGE_READY_VALUE;

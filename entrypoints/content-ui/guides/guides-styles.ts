@@ -1,113 +1,15 @@
+import $ from "jquery";
+import GUIDES_STYLES from "./guides.css?inline";
+
 const GUIDES_STYLE_ID = "wilderness-guides-styles";
 const GUIDES_ROOT_ID = "wilderness-guides-root";
-const GUIDES_STYLES = `
-#${GUIDES_ROOT_ID} {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  z-index: 2147483646;
-  overflow: visible;
-}
-
-.wilderness-guide-box,
-.wilderness-distance {
-  position: absolute;
-  left: 0;
-  top: 0;
-  pointer-events: none;
-  box-sizing: border-box;
-}
-
-.wilderness-guide-box__box {
-  position: absolute;
-  inset: 0;
-  border: 2px solid #8b5cf6;
-  box-sizing: border-box;
-}
-
-.wilderness-guide-box__label {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px;
-  border-radius: 0;
-  background: #111827;
-  color: #f9fafb;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 11px;
-  line-height: 1;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
-}
-
-.wilderness-guide-box__label--width {
-  left: 50%;
-  top: auto;
-  bottom: calc(100% + 4px);
-  transform: translateX(-50%);
-}
-
-.wilderness-guide-box__label--height {
-  left: auto;
-  right: calc(100% + 4px);
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.wilderness-distance__line {
-  position: absolute;
-  left: 0;
-  top: 0;
-  background: #22c55e;
-}
-
-.wilderness-distance__label {
-  position: absolute;
-  padding: 3px;
-  border-radius: 0;
-  background: #111827;
-  color: #f9fafb;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 11px;
-  line-height: 1;
-  transform: translate(-50%, -50%);
-  white-space: nowrap;
-}
-
-.wilderness-gridlines {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.wilderness-gridlines__svg {
-  display: block;
-  overflow: visible;
-}
-
-.wilderness-gridlines__svg line {
-  stroke: #f59e0b;
-  stroke-width: 1;
-  stroke-dasharray: 4 4;
-}
-`;
 
 export const ensureGuidesStyles = () => {
-  if (document.getElementById(GUIDES_STYLE_ID)) {
+  if ($(`#${GUIDES_STYLE_ID}`).length > 0) {
     return;
   }
 
-  const style = document.createElement("style");
-  style.id = GUIDES_STYLE_ID;
-  style.textContent = GUIDES_STYLES;
+  const style = $("<style>").attr("id", GUIDES_STYLE_ID).text(GUIDES_STYLES);
 
   const parent = document.head ?? document.documentElement;
   if (!parent) {
@@ -115,35 +17,32 @@ export const ensureGuidesStyles = () => {
     return;
   }
 
-  parent.append(style);
+  $(parent).append(style);
 };
 
 export const removeGuidesStyles = () => {
-  const style = document.getElementById(GUIDES_STYLE_ID);
-  if (!style) {
-    return;
-  }
-
-  style.remove();
+  $(`#${GUIDES_STYLE_ID}`).remove();
 };
 
 export const ensureGuidesRoot = (): HTMLElement => {
-  const existing = document.getElementById(GUIDES_ROOT_ID);
+  const existing = $(`#${GUIDES_ROOT_ID}`).get(0);
   if (existing instanceof HTMLElement) {
     return existing;
   }
 
-  const root = document.createElement("div");
-  root.id = GUIDES_ROOT_ID;
+  const root = $("<div>").attr("id", GUIDES_ROOT_ID).get(0);
+  if (!(root instanceof HTMLElement)) {
+    throw new Error("[Guides] Unable to create guides root element.");
+  }
   const parent = document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount guides root: no document root.");
   } else {
-    parent.append(root);
+    $(parent).append(root);
   }
   return root;
 };
 
 export const removeGuidesRoot = () => {
-  document.getElementById(GUIDES_ROOT_ID)?.remove();
+  $(`#${GUIDES_ROOT_ID}`).remove();
 };

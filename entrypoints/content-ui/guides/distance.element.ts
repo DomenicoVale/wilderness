@@ -1,3 +1,5 @@
+import $ from "jquery";
+
 export type DistanceHandle = {
   root: HTMLDivElement;
   setPosition: (position: DistancePosition) => void;
@@ -15,21 +17,19 @@ export type DistancePosition = {
 };
 
 export const createDistance = (mountParent?: HTMLElement): DistanceHandle => {
-  const root = document.createElement("div");
-  root.className = "wilderness-distance";
+  const root = $("<div>").addClass("wilderness-distance").get(0);
+  const line = $("<div>").addClass("wilderness-distance__line").get(0);
+  const label = $("<div>").addClass("wilderness-distance__label").get(0);
+  if (!(root instanceof HTMLDivElement) || !(line instanceof HTMLDivElement) || !(label instanceof HTMLDivElement)) {
+    throw new Error("[Guides] Unable to create distance overlay nodes.");
+  }
 
-  const line = document.createElement("div");
-  line.className = "wilderness-distance__line";
-
-  const label = document.createElement("div");
-  label.className = "wilderness-distance__label";
-
-  root.append(line, label);
+  $(root).append(line, label);
   const parent = mountParent ?? document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount distance: no document root.");
   } else {
-    parent.append(root);
+    $(parent).append(root);
   }
 
   const setPosition = ({ orientation, distance, x, y, length }: DistancePosition) => {
@@ -52,12 +52,12 @@ export const createDistance = (mountParent?: HTMLElement): DistanceHandle => {
   };
 
   const setColor = (color: string) => {
-    line.style.background = color;
-    label.style.background = color;
+    $(line).css("background", color);
+    $(label).css("background", color);
   };
 
   const setVisible = (v: boolean) => {
-    root.style.display = v ? "block" : "none";
+    $(root).toggle(v);
   };
 
   return {

@@ -1,0 +1,32 @@
+{
+  "entities": [
+    {
+      "id": "system",
+      "overrideSha256ByProvider": {
+        "claude": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847",
+        "codex": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847",
+        "copilot": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847",
+        "cursor": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847"
+      },
+      "registry": "local",
+      "sourceSha256": "6dbaa3d837067f02e7c59b71f6b3d96a57638710dda68d8f4cdcab9e95eaa5c4",
+      "type": "prompt"
+    },
+    {
+      "id": "plagiarizer",
+      "overrideSha256ByProvider": {
+        "claude": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847",
+        "codex": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847",
+        "copilot": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847",
+        "cursor": "09bfcc6a14b83e2192b8673677725c84883ee9cd0c70e45c9ec09daa8f2b2847"
+      },
+      "registry": "local",
+      "sourceSha256": "3f794092b7a13ac81d3371bceb5049e5111be780b534e6755504800dc99f8d48",
+      "type": "skill"
+    }
+  ],
+  "generatedAt": "2026-04-06T18:00:48.258Z",
+  "manifestFingerprint": "e852ad2a1761c7564f18ed785cb85a39140a929e3c80aca128cf36caef29dc78",
+  "outputs": [],
+  "version": 1
+}

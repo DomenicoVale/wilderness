@@ -35,6 +35,7 @@ Page JS → console.log() → console-interceptor.ts (MAIN)
 - Text filter for log arguments.
 - Auto-scroll that pauses when you scroll away from the bottom.
 - Log count badge in toolbar.
+- Error toast bubble under the toolbar console button (1.5s lifetime, single slot, anchored 8px below the button).
 
 ## Console Entry Schema
 Each log entry contains:

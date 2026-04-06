@@ -1,3 +1,4 @@
+import $ from "jquery";
 import { getViewportAdjustment, getViewportOverflow } from "../viewport-position";
 
 type GuideBoxHandle = {
@@ -12,26 +13,26 @@ type GuideBoxHandle = {
 };
 
 export const createGuideBox = (variant: "selected" | "hover" | "locked", mountParent?: HTMLElement): GuideBoxHandle => {
-  const root = document.createElement("div");
-  root.className = "wilderness-guide-box";
-  root.setAttribute("data-variant", variant);
+  const root = $("<div>").addClass("wilderness-guide-box").attr("data-variant", variant).get(0);
+  const box = $("<div>").addClass("wilderness-guide-box__box").get(0);
+  const widthLabel = $("<div>").addClass("wilderness-guide-box__label wilderness-guide-box__label--width").get(0);
+  const heightLabel = $("<div>").addClass("wilderness-guide-box__label wilderness-guide-box__label--height").get(0);
+  if (
+    !(root instanceof HTMLDivElement) ||
+    !(box instanceof HTMLDivElement) ||
+    !(widthLabel instanceof HTMLDivElement) ||
+    !(heightLabel instanceof HTMLDivElement)
+  ) {
+    throw new Error("[Guides] Unable to create guide box nodes.");
+  }
 
-  const box = document.createElement("div");
-  box.className = "wilderness-guide-box__box";
-
-  const widthLabel = document.createElement("div");
-  widthLabel.className = "wilderness-guide-box__label wilderness-guide-box__label--width";
-
-  const heightLabel = document.createElement("div");
-  heightLabel.className = "wilderness-guide-box__label wilderness-guide-box__label--height";
-
-  root.append(box, widthLabel, heightLabel);
+  $(root).append(box, widthLabel, heightLabel);
   root.style.display = "none";
   const parent = mountParent ?? document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount guide box: no document root.");
   } else {
-    parent.append(root);
+    $(parent).append(root);
   }
 
   const applyWidthLabelSide = (widthSide: "top" | "bottom") => {
@@ -115,9 +116,9 @@ export const createGuideBox = (variant: "selected" | "hover" | "locked", mountPa
   };
 
   const setColor = (color: string) => {
-    box.style.borderColor = color;
-    widthLabel.style.background = color;
-    heightLabel.style.background = color;
+    $(box).css("border-color", color);
+    $(widthLabel).css("background", color);
+    $(heightLabel).css("background", color);
   };
 
   return {
@@ -127,14 +128,14 @@ export const createGuideBox = (variant: "selected" | "hover" | "locked", mountPa
     setLabelSide,
     setLabelsVisible: (visible: boolean) => {
       const display = visible ? "inline-flex" : "none";
-      widthLabel.style.display = display;
-      heightLabel.style.display = display;
+      $(widthLabel).css("display", display);
+      $(heightLabel).css("display", display);
     },
     show: () => {
-      root.style.display = "block";
+      $(root).show();
     },
     hide: () => {
-      root.style.display = "none";
+      $(root).hide();
     },
     remove: () => {
       root.remove();

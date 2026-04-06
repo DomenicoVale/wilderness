@@ -1,3 +1,4 @@
+import $ from "jquery";
 import { getDeepTargetFromPoint, isDeepPickEvent } from "../../../lib/deep-pick";
 import type { DistanceHandle } from "./distance.element";
 import { createGridlines } from "./gridlines.element";
@@ -429,8 +430,7 @@ export const createGuidesController = () => {
       return;
     }
 
-    const target =
-      event.target instanceof Element ? event.target : event.target instanceof Node ? event.target.parentElement : null;
+    const target = event.target instanceof Node ? ($(event.target).closest("*").get(0) ?? null) : null;
 
     if (target && isGuidesUiElement(target)) {
       return;

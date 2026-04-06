@@ -1,0 +1,313 @@
+.wilderness-info-outline {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 2147483646;
+  border: 2px solid #38bdf8;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.wilderness-info-outline[data-variant="pinned"] {
+  border-color: #22c55e;
+}
+
+.wilderness-info-outline[data-variant="hover"] {
+  border-color: #38bdf8;
+}
+
+.wilderness-inspect-panel {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 20rem;
+  height: min(66vh, calc(100vh - 32px));
+  min-width: 20rem;
+  max-width: calc(100vw - 32px);
+  min-height: min(320px, calc(100vh - 32px));
+  resize: none;
+  overflow: hidden;
+  max-height: calc(100vh - 32px);
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #e0e0e0;
+  background: rgba(0, 0, 0, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.wilderness-inspect-panel__resize {
+  position: absolute;
+  z-index: 2;
+  background: transparent;
+}
+
+.wilderness-inspect-panel__resize[data-edge="top"] {
+  top: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.wilderness-inspect-panel__resize[data-edge="right"] {
+  top: 10px;
+  right: -4px;
+  bottom: 10px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.wilderness-inspect-panel__resize[data-edge="bottom"] {
+  bottom: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.wilderness-inspect-panel__resize[data-edge="left"] {
+  top: 10px;
+  left: -4px;
+  bottom: 10px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.wilderness-inspect-panel__resize[data-edge="top-left"] {
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
+
+.wilderness-inspect-panel__resize[data-edge="top-right"] {
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.wilderness-inspect-panel__resize[data-edge="bottom-right"] {
+  right: -4px;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
+
+.wilderness-inspect-panel__resize[data-edge="bottom-left"] {
+  left: -4px;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.wilderness-inspect-left {
+  position: fixed;
+  top: 16px;
+  width: 26rem;
+  min-width: 26rem;
+  max-width: calc(100vw - 32px);
+  height: min(66vh, calc(100vh - 32px));
+  min-height: min(320px, calc(100vh - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  resize: none;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #e0e0e0;
+  background: rgba(0, 0, 0, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
+  min-width: 0;
+  left: 16px;
+}
+
+.wilderness-inspect-left__resize {
+  position: absolute;
+  z-index: 2;
+  background: transparent;
+}
+
+.wilderness-inspect-left__resize[data-edge="top"] {
+  top: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.wilderness-inspect-left__resize[data-edge="right"] {
+  top: 10px;
+  right: -4px;
+  bottom: 10px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.wilderness-inspect-left__resize[data-edge="bottom"] {
+  bottom: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.wilderness-inspect-left__resize[data-edge="left"] {
+  top: 10px;
+  left: -4px;
+  bottom: 10px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.wilderness-inspect-left__resize[data-edge="top-left"] {
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
+
+.wilderness-inspect-left__resize[data-edge="top-right"] {
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.wilderness-inspect-left__resize[data-edge="bottom-right"] {
+  right: -4px;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+}
+
+.wilderness-inspect-left__resize[data-edge="bottom-left"] {
+  left: -4px;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  cursor: nesw-resize;
+}
+
+.wilderness-inspect-left[data-collapsed="true"] {
+  width: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  height: auto;
+  min-height: 40px;
+  max-height: none;
+  resize: none;
+  overflow: visible;
+}
+
+.wilderness-inspect-left__collapsed {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: grab;
+  user-select: none;
+  padding: 0;
+}
+
+.wilderness-inspect-left[data-collapsed="true"] .wilderness-inspect-left__collapsed {
+  display: flex;
+}
+
+.wilderness-inspect-left[data-collapsed="true"] .wilderness-inspect-left__content {
+  display: none;
+}
+
+.wilderness-inspect-left__collapsed-btn,
+.wilderness-inspect-left__toggle {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e0e0e0;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  padding: 2px 5px;
+}
+
+.wilderness-inspect-left__collapsed-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.wilderness-inspect-left__collapsed-label {
+  font-size: 8px;
+  line-height: 1;
+  color: #a8b2c3;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.wilderness-inspect-left__collapsed-btn:hover,
+.wilderness-inspect-left__toggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wilderness-inspect-left__content {
+  padding: 4px 6px 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.wilderness-inspect-left__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: grab;
+  user-select: none;
+}
+
+.wilderness-inspect-left__header:active {
+  cursor: grabbing;
+}
+
+.wilderness-inspect-left__title {
+  color: #00ff88;
+}
+
+.wilderness-inspect-left__section {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.02);
+  min-width: 0;
+  min-height: 0;
+}
+
+.wilderness-inspect-left__section-title {
+  padding: 3px 6px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  color: #00ff88;
+  text-transform: uppercase;
+}

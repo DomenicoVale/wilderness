@@ -1,8 +1,5 @@
 /// <reference path="../.wxt/wxt.d.ts" />
 
-// TODO: refactor this file to be cleaner, remove unnecessary utils, move ui mounting logic to own file
-// same thing for the console logic and controllers. The file should only contain the exported define content script.
-
 import { createRoot } from "react-dom/client";
 import { addConsoleEntry, isConsoleMessage } from "../lib/console-store";
 import { createContentEventHandlers } from "../lib/content-events";
@@ -18,8 +15,10 @@ import {
 import { SET_UI_MESSAGE } from "../lib/events";
 import { ContentToolbar } from "./content-ui/content-toolbar";
 import { createGuidesController } from "./content-ui/guides/guides-tool";
-import { createInfoController } from "./content-ui/info/info-tool";
+import { createInfoController } from "./content-ui/info/core";
 import { getToolState, setToolState } from "./content-ui/tool-state";
+import "./content-ui/console/console-panel.css";
+import "./content-ui/content-toolbar.css";
 import "./content-ui/style.css";
 type ContentScriptContextType = InstanceType<typeof ContentScriptContext>;
 type ContentUiType = ShadowRootContentScriptUi<ReturnType<typeof createRoot>>;
@@ -34,15 +33,11 @@ const STALE_UI_SELECTORS = [
   ".wilderness-gridlines",
   ".wilderness-info-outline",
   ".wilderness-inspect-panel",
+  ".wilderness-inspect-left",
   ".wilderness-layout-overlay",
 ];
 const STALE_STYLE_IDS = ["wilderness-guides-styles", "wilderness-info-styles"] as const;
 const STALE_NODE_IDS = ["wilderness-guides-root"] as const;
-const didCustomToolChange = (previous: CustomTool, next: CustomTool) =>
-  previous.updatedAt !== next.updatedAt ||
-  previous.name !== next.name ||
-  previous.code !== next.code ||
-  previous.mode !== next.mode;
 
 let contentUi: ContentUiType | null = null;
 let contentUiPromise: Promise<ContentUiType> | null = null;
@@ -205,6 +200,7 @@ const mountUi = async (ctx: ContentScriptContextType, epoch: number) => {
 const unmountUi = () => {
   guidesController?.disable();
   infoController?.disable();
+  infoController?.destroy();
   guidesController = null;
   infoController = null;
   setToolState({
@@ -410,11 +406,18 @@ export default defineContentScript({
 
         const wasActive = lastKnownActiveToolIds.has(toolId);
         const previousTool = appliedCustomTools.get(toolId);
-        if (wasActive && previousTool && !didCustomToolChange(previousTool, tool)) {
+        if (
+          wasActive &&
+          previousTool &&
+          previousTool.updatedAt === tool.updatedAt &&
+          previousTool.name === tool.name &&
+          previousTool.code === tool.code &&
+          previousTool.mode === tool.mode
+        ) {
           continue;
         }
 
-        const didSetup = await runCustomTool({ tool, reason: wasActive ? "enable" : "enable", action: "setup" });
+        const didSetup = await runCustomTool({ tool, reason: "enable", action: "setup" });
         if (didSetup) {
           appliedCustomTools.set(tool.id, tool);
           continue;

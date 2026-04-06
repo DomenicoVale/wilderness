@@ -1,8 +1,10 @@
 import { createDistance, type DistanceHandle, type DistancePosition } from "./distance.element";
 import { getTargetRect } from "./guides-utils";
 
+const DISTANCE_LINE_THICKNESS = 2;
+
 const buildMeasurementPositions = (anchorBounds: DOMRect, targetBounds: DOMRect): DistancePosition[] => {
-  const midOffset = 2.5;
+  const midOffset = DISTANCE_LINE_THICKNESS / 2;
   const measurements: DistancePosition[] = [];
 
   if (anchorBounds.right < targetBounds.left) {

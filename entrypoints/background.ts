@@ -1,3 +1,4 @@
+import { clearActionState, setActionEnabled, setActionWarning } from "../lib/background/action-indicator";
 import {
   initializeCustomToolBridge,
   injectCustomToolBridgeForTab,
@@ -7,19 +8,13 @@ import type { CustomToolBridgeResponse } from "../lib/custom-tools/bridge";
 import { ENSURE_CUSTOM_TOOL_BRIDGE_MESSAGE, OPEN_CUSTOM_TOOL_EDITOR_MESSAGE } from "../lib/custom-tools/messages";
 import { SET_UI_MESSAGE } from "../lib/events";
 
-// TODO: refactor this file to leave only the exported defineBackground function
-// move the rest into their own logical folders and files.
-
 const CONTENT_SCRIPT_FILE = "content-scripts/content.js";
 const CONSOLE_INTERCEPTOR_FILE = "console-interceptor.js";
-const DEFAULT_ACTION_TITLE = "wilderness";
-const ACTION_WARNING_BADGE_TEXT = "!";
-const ACTION_WARNING_BADGE_COLOR = "#f59e0b";
 
-const ENABLED_ORIGINS_KEY = "wilderness:enabled-origins";
+const UI_ENABLED_KEY = "wilderness:ui-enabled";
 
-let enabledOrigins = new Set<string>();
-let originsLoaded = false;
+let uiEnabled = false;
+let enabledStateLoaded = false;
 /**
  * Register the console interceptor to run in MAIN world on all pages.
  * This captures console logs even before the extension UI is opened.
@@ -46,50 +41,41 @@ const registerConsoleInterceptor = async () => {
   }
 };
 
-const loadEnabledOrigins = async () => {
-  if (originsLoaded) {
+const loadUiEnabledState = async () => {
+  if (enabledStateLoaded) {
     return;
   }
 
   try {
-    const stored = await browser.storage.local.get(ENABLED_ORIGINS_KEY);
-    const origins = Array.isArray(stored[ENABLED_ORIGINS_KEY])
-      ? stored[ENABLED_ORIGINS_KEY].filter((value) => typeof value === "string")
-      : [];
-    enabledOrigins = new Set(origins);
+    const stored = await browser.storage.local.get(UI_ENABLED_KEY);
+    uiEnabled = stored[UI_ENABLED_KEY] === true;
   } catch (error) {
-    console.warn("[wilderness] Failed to load enabled origins.", error);
-    enabledOrigins = new Set();
+    console.warn("[wilderness] Failed to load enabled state.", error);
+    uiEnabled = false;
   } finally {
-    originsLoaded = true;
+    enabledStateLoaded = true;
   }
 };
 
-const persistEnabledOrigins = async () => {
+const persistUiEnabledState = async () => {
   try {
-    await browser.storage.local.set({
-      [ENABLED_ORIGINS_KEY]: Array.from(enabledOrigins),
-    });
+    await browser.storage.local.set({ [UI_ENABLED_KEY]: uiEnabled });
   } catch (error) {
-    console.warn("[wilderness] Failed to persist enabled origins.", error);
+    console.warn("[wilderness] Failed to persist enabled state.", error);
   }
 };
 
-const getOriginFromUrl = (url?: string | null) => {
+const isSupportedPageUrl = (url?: string | null) => {
   if (!url) {
-    return null;
+    return false;
   }
 
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return null;
-    }
-
-    return parsed.origin;
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
   } catch (error) {
     console.warn("[wilderness] Unable to parse tab URL.", error);
-    return null;
+    return false;
   }
 };
 
@@ -126,25 +112,6 @@ const getInjectionFailureReason = (error: unknown) => {
   return "Unable to inject toolbar on this page.";
 };
 
-const setActionWarning = async (tabId: number, message: string) => {
-  try {
-    await browser.action.setBadgeBackgroundColor({ tabId, color: ACTION_WARNING_BADGE_COLOR });
-    await browser.action.setBadgeText({ tabId, text: ACTION_WARNING_BADGE_TEXT });
-    await browser.action.setTitle({ tabId, title: `${DEFAULT_ACTION_TITLE}: ${message}` });
-  } catch (error) {
-    console.warn("[wilderness] Failed to set action warning.", error);
-  }
-};
-
-const clearActionWarning = async (tabId: number) => {
-  try {
-    await browser.action.setBadgeText({ tabId, text: "" });
-    await browser.action.setTitle({ tabId, title: DEFAULT_ACTION_TITLE });
-  } catch (error) {
-    console.warn("[wilderness] Failed to clear action warning.", error);
-  }
-};
-
 const ensureUiForTab = async (tabId: number): Promise<string | null> => {
   const sent = await sendUiMessage(tabId, true);
   if (sent) {
@@ -168,32 +135,69 @@ const ensureUiForTab = async (tabId: number): Promise<string | null> => {
 };
 
 const disableUiForTab = async (tabId: number) => {
-  const sent = await sendUiMessage(tabId, false);
-  if (!sent) {
-    console.warn("[wilderness] Unable to disable UI for this tab.");
+  await sendUiMessage(tabId, false);
+};
+
+const setUiEnabled = async (next: boolean) => {
+  uiEnabled = next;
+  await persistUiEnabledState();
+};
+
+const updateActionStateForTab = async (tabId: number, url?: string | null, warning?: string | null) => {
+  if (warning) {
+    await setActionWarning(tabId, warning, uiEnabled);
+    return;
   }
+
+  if (!uiEnabled) {
+    await clearActionState(tabId);
+    return;
+  }
+
+  if (!isSupportedPageUrl(url)) {
+    await setActionWarning(tabId, "Open an HTTP(S) page to use the extension.", uiEnabled);
+    return;
+  }
+
+  await setActionEnabled(tabId);
 };
 
-const getTabsForOrigin = async (origin: string) => {
+const syncTabForEnabledState = async (tab: { id?: number; url?: string | null; active?: boolean }) => {
+  if (!tab.id) {
+    return;
+  }
+
+  if (!uiEnabled) {
+    if (isSupportedPageUrl(tab.url)) {
+      await disableUiForTab(tab.id);
+    }
+    await clearActionState(tab.id);
+    return;
+  }
+
+  if (!isSupportedPageUrl(tab.url)) {
+    if (tab.active) {
+      await setActionWarning(tab.id, "Open an HTTP(S) page to use the extension.", uiEnabled);
+    } else {
+      await clearActionState(tab.id);
+    }
+    return;
+  }
+
+  const reason = await ensureUiForTab(tab.id);
+  await updateActionStateForTab(tab.id, tab.url, reason);
+};
+
+const syncAllTabsForEnabledState = async () => {
   const tabs = await browser.tabs.query({});
-  return tabs.filter((tab) => tab.id && getOriginFromUrl(tab.url) === origin);
-};
-
-const enableOrigin = async (origin: string) => {
-  enabledOrigins.add(origin);
-  await persistEnabledOrigins();
-};
-
-const disableOrigin = async (origin: string) => {
-  enabledOrigins.delete(origin);
-  await persistEnabledOrigins();
+  await Promise.all(tabs.map((tab) => syncTabForEnabledState(tab)));
 };
 
 export default defineBackground(() => {
   // Register console interceptor on extension startup
   void registerConsoleInterceptor();
   void initializeCustomToolBridge();
-  void loadEnabledOrigins();
+  void loadUiEnabledState().then(() => syncAllTabsForEnabledState());
 
   browser.action.onClicked.addListener(async (tab) => {
     if (!tab.id) {
@@ -201,42 +205,24 @@ export default defineBackground(() => {
       return;
     }
 
-    await clearActionWarning(tab.id);
-    await loadEnabledOrigins();
-
-    const origin = getOriginFromUrl(tab.url);
-    if (!origin) {
-      console.warn("[wilderness] Unable to toggle UI for this URL.");
-      await setActionWarning(tab.id, "Open an HTTP(S) page and try again.");
-      return;
-    }
+    await loadUiEnabledState();
 
     console.info("[wilderness] Action clicked, toggling UI.");
-    if (enabledOrigins.has(origin)) {
-      await disableOrigin(origin);
-      const tabs = await getTabsForOrigin(origin);
-      const tabIds = tabs.flatMap((item) => (item.id ? [item.id] : []));
-      await Promise.all(tabIds.map((id) => disableUiForTab(id)));
+    const nextEnabled = !uiEnabled;
+    await setUiEnabled(nextEnabled);
+
+    if (!nextEnabled) {
+      await syncAllTabsForEnabledState();
       return;
     }
 
-    await enableOrigin(origin);
-    const tabs = await getTabsForOrigin(origin);
-    const tabIds = tabs.flatMap((item) => (item.id ? [item.id] : []));
-    const results = await Promise.all(
-      tabIds.map(async (id) => ({
-        id,
-        reason: await ensureUiForTab(id),
-      }))
-    );
-
-    const activeTabResult = results.find((result) => result.id === tab.id);
-    if (activeTabResult?.reason) {
-      await setActionWarning(tab.id, activeTabResult.reason);
+    if (!isSupportedPageUrl(tab.url)) {
+      await setActionWarning(tab.id, "Enabled. Open an HTTP(S) page to use the extension.", uiEnabled);
+      await syncAllTabsForEnabledState();
       return;
     }
 
-    await clearActionWarning(tab.id);
+    await syncAllTabsForEnabledState();
   });
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -269,32 +255,39 @@ export default defineBackground(() => {
       return;
     }
 
-    await loadEnabledOrigins();
-    const origin = getOriginFromUrl(tab.url);
-    if (!origin || !enabledOrigins.has(origin)) {
+    await loadUiEnabledState();
+    if (!uiEnabled) {
+      await clearActionState(tabId);
+      return;
+    }
+
+    if (!isSupportedPageUrl(tab.url)) {
+      if (tab.active) {
+        await setActionWarning(tabId, "Open an HTTP(S) page to use the extension.", uiEnabled);
+      } else {
+        await clearActionState(tabId);
+      }
       return;
     }
 
     const reason = await ensureUiForTab(tabId);
-    if (tab.active && reason) {
-      await setActionWarning(tabId, reason);
-    }
+    await updateActionStateForTab(tabId, tab.url, reason);
   });
 
   browser.tabs.onActivated.addListener(async ({ tabId }) => {
-    await loadEnabledOrigins();
+    await loadUiEnabledState();
     const tab = await browser.tabs.get(tabId);
-    const origin = getOriginFromUrl(tab.url);
-    if (!origin || !enabledOrigins.has(origin)) {
+    if (!uiEnabled) {
+      await clearActionState(tabId);
+      return;
+    }
+
+    if (!isSupportedPageUrl(tab.url)) {
+      await setActionWarning(tabId, "Open an HTTP(S) page to use the extension.", uiEnabled);
       return;
     }
 
     const reason = await ensureUiForTab(tabId);
-    if (reason) {
-      await setActionWarning(tabId, reason);
-      return;
-    }
-
-    await clearActionWarning(tabId);
+    await updateActionStateForTab(tabId, tab.url, reason);
   });
 });

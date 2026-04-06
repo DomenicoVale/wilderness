@@ -23,10 +23,11 @@ Guides is a ruler-style inspection tool for measuring element dimensions and dis
 - Guides geometry is recalculated with a debounced `resize` handler instead of per-frame scroll updates.
 
 ## Relevant Files
-- `entrypoints/content-ui/guides/guides_tool.ts`: Guides controller and event wiring.
+- `entrypoints/content-ui/guides/guides-tool.ts`: Guides controller and event wiring.
 - `entrypoints/content-ui/guides/measurements.ts`: Distance calculations.
-- `entrypoints/content-ui/guides/guides_utils.ts`: Element picking and filtering.
-- `entrypoints/content-ui/guides/guide_box.element.ts`: Selection and hover boxes.
+- `entrypoints/content-ui/guides/guides-utils.ts`: Element picking and filtering.
+- `entrypoints/content-ui/guides/guide-box.element.ts`: Selection and hover boxes.
 - `entrypoints/content-ui/guides/distance.element.ts`: Distance line rendering.
 - `entrypoints/content-ui/guides/gridlines.element.ts`: Full-edge gridlines.
-- `entrypoints/content-ui/guides/guides_tool.ts`: Injected Guides styles.
+- `entrypoints/content-ui/guides/guides-styles.ts`: Runtime style injector for Guides CSS.
+- `entrypoints/content-ui/guides/guides.css`: Guides overlay style source.

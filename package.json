@@ -16,8 +16,9 @@
     "check": "tsc --noEmit",
     "format": "biome check --write .",
     "format:fix": "biome check --write --unsafe .",
-    "rules:generate": "agent-rules",
-    "postinstall": "wxt prepare && simple-git-hooks"
+    "rules:generate": "harness --no-interactive apply",
+    "postinstall": "wxt prepare && simple-git-hooks",
+    "harness:apply": "harness --no-interactive apply"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -39,13 +40,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.7",
+    "@madebywild/agent-harness-framework": "^1.8.0",
     "@types/culori": "^4.0.1",
     "@types/jquery": "^3.5.33",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/webfontloader": "^1.6.38",
     "@wxt-dev/module-react": "^1.1.5",
-    "agent-rules": "git+https://github.com/madebywild/agent-rules.git#main",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "simple-git-hooks": "^2.11.1",

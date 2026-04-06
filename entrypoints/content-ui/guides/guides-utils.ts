@@ -1,3 +1,4 @@
+import $ from "jquery";
 import {
   type DeepTarget,
   getTargetRect as getDeepTargetRect,
@@ -8,7 +9,7 @@ import {
 const TOOLBAR_HOST = "wilderness-toolbar";
 
 export const isToolbarElement = (el: Element) => {
-  if (el.closest(TOOLBAR_HOST)) {
+  if ($(el).closest(TOOLBAR_HOST).length > 0) {
     return true;
   }
 
@@ -21,7 +22,8 @@ export const isToolbarElement = (el: Element) => {
 };
 
 export const isGuidesElement = (el: Element) =>
-  el.closest("wilderness-guide-box, wilderness-distance, wilderness-gridlines, .wilderness-info-tip, .wilderness-info-outline");
+  $(el).closest("wilderness-guide-box, wilderness-distance, wilderness-gridlines, .wilderness-info-tip, .wilderness-info-outline")
+    .length > 0;
 
 export const isGuidesUiElement = (el: Element) => isToolbarElement(el) || isGuidesElement(el);
 

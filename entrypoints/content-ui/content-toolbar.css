@@ -1,0 +1,291 @@
+@keyframes hudBubbleIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.7) translateY(-4px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.03) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+
+@keyframes hudBubbleOut {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.45) translateY(8px);
+  }
+}
+
+@keyframes hudLineGrow {
+  0% {
+    clip-path: inset(0 50% 0 50%);
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes hudItemIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wld-hud {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.wld-hud-bar {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 2px 4px;
+  position: relative;
+}
+
+.wld-hud-line {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.4);
+  width: 120px;
+  animation: hudLineGrow 0.15s ease-out forwards;
+  pointer-events: none;
+}
+
+.wld-hud-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 2px 4px;
+  color: #e0e0e0;
+  white-space: nowrap;
+  user-select: none;
+  opacity: 0;
+  animation: hudItemIn 0.12s ease-out forwards;
+  letter-spacing: 0.02em;
+}
+
+.wld-hud-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wld-hud-console-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wld-hud-error-bubble {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  width: max-content;
+  max-width: 220px;
+  min-width: 140px;
+  padding: 5px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.94);
+  color: #f8fafc;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  box-shadow: 0 16px 36px -26px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  transform-origin: center top;
+  animation: hudBubbleIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.wld-hud-error-bubble[data-state="leaving"] {
+  animation: hudBubbleOut 160ms cubic-bezier(0.55, 0, 1, 0.45) both;
+}
+
+.wld-hud-error-bubble-icon {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  color: #f59e0b;
+  margin-top: 1px;
+}
+
+.wld-hud-error-bubble-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.wld-hud button {
+  border-radius: 0;
+}
+
+.wld-hud button:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.95);
+  outline-offset: 0;
+  box-shadow: none;
+}
+
+.wld-hud-btn.active {
+  color: #00ff88;
+}
+
+.wld-hud-btn.active:hover {
+  color: #33ffaa;
+}
+
+.wld-hud-sep {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 11px;
+  padding: 0 1px;
+  pointer-events: none;
+  opacity: 0;
+  animation: hudItemIn 0.12s ease-out forwards;
+  user-select: none;
+}
+
+.wld-hud-collapse {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  color: #e0e0e0;
+  padding: 2px 6px;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+.wld-hud-collapse:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wld-hud-tools-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wld-hud-submenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 280px;
+  max-width: 320px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.92);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+
+.wld-hud-submenu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wld-hud-submenu-title {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 4px;
+  user-select: none;
+}
+
+.wld-hud-submenu-divider {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  margin: 0;
+}
+
+.wld-hud-submenu-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.wld-hud-submenu-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wld-hud-submenu-btn.active {
+  color: #00ff88;
+}
+
+.wld-hud-submenu-btn.active:hover {
+  color: #33ffaa;
+}
+
+.wld-hud-submenu-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wld-hud-submenu-state {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.wld-hud-submenu-btn.active .wld-hud-submenu-state {
+  color: inherit;
+}
+
+.wld-hud-submenu-empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  padding: 4px;
+  user-select: none;
+}

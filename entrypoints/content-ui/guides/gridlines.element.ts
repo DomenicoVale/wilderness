@@ -1,3 +1,5 @@
+import $ from "jquery";
+
 type GridlinesHandle = {
   root: HTMLDivElement;
   update: (rect: DOMRect) => void;
@@ -7,15 +9,17 @@ type GridlinesHandle = {
 };
 
 const createSvg = () => {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.classList.add("wilderness-gridlines__svg");
+  const svg = $(document.createElementNS("http://www.w3.org/2000/svg", "svg")).addClass("wilderness-gridlines__svg").get(0);
+  if (!(svg instanceof SVGSVGElement)) {
+    throw new Error("[Guides] Unable to create gridlines SVG.");
+  }
 
   const lineLeft = document.createElementNS("http://www.w3.org/2000/svg", "line");
   const lineRight = document.createElementNS("http://www.w3.org/2000/svg", "line");
   const lineTop = document.createElementNS("http://www.w3.org/2000/svg", "line");
   const lineBottom = document.createElementNS("http://www.w3.org/2000/svg", "line");
 
-  svg.append(lineLeft, lineRight, lineTop, lineBottom);
+  $(svg).append(lineLeft, lineRight, lineTop, lineBottom);
   return { svg, lineLeft, lineRight, lineTop, lineBottom };
 };
 
@@ -44,60 +48,71 @@ const getDocumentDimensions = () => {
 };
 
 export const createGridlines = (mountParent?: HTMLElement): GridlinesHandle => {
-  const root = document.createElement("div");
-  root.className = "wilderness-gridlines";
+  const root = $("<div>").addClass("wilderness-gridlines").get(0);
+  if (!(root instanceof HTMLDivElement)) {
+    throw new Error("[Guides] Unable to create gridlines root.");
+  }
 
   const { svg, lineLeft, lineRight, lineTop, lineBottom } = createSvg();
-  root.append(svg);
-  root.style.display = "none";
+  $(root).append(svg).hide();
   const parent = mountParent ?? document.documentElement ?? document.body;
   if (!parent) {
     console.warn("[Guides] Unable to mount gridlines: no document root.");
   } else {
-    parent.append(root);
+    $(parent).append(root);
   }
 
   const update = (rect: DOMRect) => {
     const dimensions = getDocumentDimensions();
 
-    svg.setAttribute("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`);
-    svg.setAttribute("width", `${dimensions.width}`);
-    svg.setAttribute("height", `${dimensions.height}`);
+    $(svg).attr({
+      viewBox: `0 0 ${dimensions.width} ${dimensions.height}`,
+      width: `${dimensions.width}`,
+      height: `${dimensions.height}`,
+    });
 
     const left = rect.left;
     const right = rect.left + rect.width;
     const top = rect.top;
     const bottom = rect.top + rect.height;
 
-    lineLeft.setAttribute("x1", `${left}`);
-    lineLeft.setAttribute("x2", `${left}`);
-    lineLeft.setAttribute("y1", "0");
-    lineLeft.setAttribute("y2", `${dimensions.height}`);
+    $(lineLeft).attr({
+      x1: `${left}`,
+      x2: `${left}`,
+      y1: "0",
+      y2: `${dimensions.height}`,
+    });
 
-    lineRight.setAttribute("x1", `${right}`);
-    lineRight.setAttribute("x2", `${right}`);
-    lineRight.setAttribute("y1", "0");
-    lineRight.setAttribute("y2", `${dimensions.height}`);
+    $(lineRight).attr({
+      x1: `${right}`,
+      x2: `${right}`,
+      y1: "0",
+      y2: `${dimensions.height}`,
+    });
 
-    lineTop.setAttribute("x1", "0");
-    lineTop.setAttribute("x2", `${dimensions.width}`);
-    lineTop.setAttribute("y1", `${top}`);
-    lineTop.setAttribute("y2", `${top}`);
+    $(lineTop).attr({
+      x1: "0",
+      x2: `${dimensions.width}`,
+      y1: `${top}`,
+      y2: `${top}`,
+    });
 
-    lineBottom.setAttribute("x1", "0");
-    lineBottom.setAttribute("x2", `${dimensions.width}`);
-    lineBottom.setAttribute("y1", `${bottom}`);
-    lineBottom.setAttribute("y2", `${bottom}`);
+    $(lineBottom).attr({
+      x1: "0",
+      x2: `${dimensions.width}`,
+      y1: `${bottom}`,
+      y2: `${bottom}`,
+    });
   };
 
   return {
     root,
     update,
     show: () => {
-      root.style.display = "block";
+      $(root).show();
     },
     hide: () => {
-      root.style.display = "none";
+      $(root).hide();
     },
     remove: () => {
       root.remove();

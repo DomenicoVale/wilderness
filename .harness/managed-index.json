@@ -1,0 +1,16 @@
+{
+  "managedOutputPaths": [],
+  "managedSourcePaths": [
+    ".harness/src/prompts/system.md",
+    ".harness/src/prompts/system.overrides.claude.yaml",
+    ".harness/src/prompts/system.overrides.codex.yaml",
+    ".harness/src/prompts/system.overrides.copilot.yaml",
+    ".harness/src/prompts/system.overrides.cursor.yaml",
+    ".harness/src/skills/plagiarizer/OVERRIDES.claude.yaml",
+    ".harness/src/skills/plagiarizer/OVERRIDES.codex.yaml",
+    ".harness/src/skills/plagiarizer/OVERRIDES.copilot.yaml",
+    ".harness/src/skills/plagiarizer/OVERRIDES.cursor.yaml",
+    ".harness/src/skills/plagiarizer/SKILL.md"
+  ],
+  "version": 1
+}
