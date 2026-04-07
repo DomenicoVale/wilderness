@@ -5,4 +5,5 @@ export const TOGGLE_INFO_EVENT = "wilderness:toggle-info";
 export const INFO_SETTINGS_EVENT = "wilderness:info-settings";
 export const INFO_SAVE_STATE_EVENT = "wilderness:info-save-state";
 export const INFO_CLEAR_STATE_EVENT = "wilderness:info-clear-state";
+export const INFO_STATE_FEEDBACK_EVENT = "wilderness:info-state-feedback";
 export const TOGGLE_CONSOLE_EVENT = "wilderness:toggle-console";

@@ -58,6 +58,8 @@ export const DISPLAY_OPTIONS: SelectOption[] = [
   { label: "block", value: "block" },
   { label: "inline-block", value: "inline-block" },
   { label: "flex", value: "flex" },
+  { label: "-webkit-box", value: "-webkit-box" },
+  { label: "-webkit-inline-box", value: "-webkit-inline-box" },
   { label: "grid", value: "grid" },
   { label: "inline-flex", value: "inline-flex" },
   { label: "inline-grid", value: "inline-grid" },

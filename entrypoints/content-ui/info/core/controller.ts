@@ -48,6 +48,7 @@ export const createInfoController = () => {
 
   const hoverOutline = createOutline("hover");
   const selectedOutline = createOutline("pinned");
+  let restoreInFlight = false;
 
   const panel = createInfoPanel({
     getSelected: () => state.selectedElement,
@@ -88,6 +89,12 @@ export const createInfoController = () => {
     if (!(element instanceof HTMLElement)) {
       return;
     }
+    if (state.editingTextElement && state.editingTextElement !== element) {
+      state.editingTextElement.blur();
+    }
+    if (state.editingTextElement === element && $(element).attr("contenteditable") === "plaintext-only") {
+      return;
+    }
     if (isInfoUiElement(element)) {
       return;
     }
@@ -97,6 +104,19 @@ export const createInfoController = () => {
     }
     state.editingTextElement = element;
     const originalText = element.textContent ?? "";
+    const applyEditedTextValue = (value: string) => {
+      if (value.includes("\n")) {
+        const safe = value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+        element.innerHTML = safe.replaceAll("\n", "<br>");
+        return;
+      }
+      element.textContent = value;
+    };
     $(element).attr({
       contenteditable: "plaintext-only",
       "data-wilderness-editing-text": "true",
@@ -110,9 +130,24 @@ export const createInfoController = () => {
       selection.addRange(range);
     }
 
+    const handleEditKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        element.blur();
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        applyEditedTextValue(originalText);
+        element.blur();
+      }
+    };
+
     const finish = () => {
       const edited = element.textContent ?? "";
+      element.removeEventListener("keydown", handleEditKeydown);
       $(element).removeAttr("contenteditable data-wilderness-editing-text");
+      applyEditedTextValue(edited);
       panel.recordTextChange(element, edited, originalText);
       state.editingTextElement = null;
       panel.render(state.selectedElement, { preserveScroll: true });
@@ -126,25 +161,14 @@ export const createInfoController = () => {
       { once: true }
     );
 
-    element.addEventListener(
-      "keydown",
-      (event) => {
-        if (!(event instanceof KeyboardEvent)) {
-          return;
-        }
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          element.blur();
-        }
-        if (event.key === "Escape") {
-          event.preventDefault();
-          element.textContent = originalText;
-          element.blur();
-        }
-      },
-      { once: true }
-    );
+    element.addEventListener("keydown", handleEditKeydown);
   };
+
+  const isEditingTarget = (target: EventTarget | null) =>
+    Boolean(state.editingTextElement && target instanceof Node && state.editingTextElement.contains(target));
+
+  const isRestoreButtonEventTarget = (target: EventTarget | null) =>
+    target instanceof Element && Boolean(target.closest(".wilderness-inspect-restore__button"));
 
   const restoreState = async () => {
     const persisted = await loadPersistedInspectState();
@@ -169,9 +193,11 @@ export const createInfoController = () => {
         elements: pending.elements,
       });
       panel.setStatusFeedback("State saved", "success");
+      return { message: "State saved", tone: "success" as const };
     } catch (error) {
       console.warn("[Inspect] Unable to save state.", error);
       panel.setStatusFeedback("Save failed", "error");
+      return { message: "Save failed", tone: "error" as const };
     }
   };
 
@@ -200,7 +226,9 @@ export const createInfoController = () => {
     state.persistedLoaded = true;
     if (state.selectedElement) {
       panel.render(state.selectedElement, { preserveScroll: true });
+      return;
     }
+    panel.render(null, { preserveScroll: true });
   };
 
   panel.setSelectionCallback((element) => {
@@ -292,6 +320,9 @@ export const createInfoController = () => {
     if (!state.enabled || !(event instanceof MouseEvent)) {
       return;
     }
+    if (state.editingTextElement) {
+      return;
+    }
     if (isInfoUiEvent(event)) {
       state.hoverTarget = null;
       if (!state.previewHoverElement) {
@@ -326,7 +357,37 @@ export const createInfoController = () => {
     if (!state.enabled || !(event instanceof MouseEvent)) {
       return;
     }
+    if (isRestoreButtonEventTarget(event.target)) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (restoreInFlight) {
+        return;
+      }
+      restoreInFlight = true;
+      void restoreState()
+        .then((restored) => {
+          panel.setStatusFeedback(restored ? "State restored" : "No saved state", restored ? "success" : "error");
+        })
+        .catch((error) => {
+          console.warn("[Inspect] Unable to restore saved state.", error);
+          panel.setStatusFeedback("Restore failed", "error");
+        })
+        .finally(() => {
+          restoreInFlight = false;
+        });
+      return;
+    }
+    if (state.editingTextElement) {
+      if (isEditingTarget(event.target)) {
+        return;
+      }
+      state.editingTextElement.blur();
+      return;
+    }
     if (isInfoUiEvent(event)) {
+      return;
+    }
+    if (event.detail > 1) {
       return;
     }
 
@@ -345,17 +406,36 @@ export const createInfoController = () => {
     if (!state.enabled || !(event instanceof MouseEvent)) {
       return;
     }
+    if (isRestoreButtonEventTarget(event.target)) {
+      return;
+    }
+    if (state.editingTextElement) {
+      if (isEditingTarget(event.target)) {
+        return;
+      }
+      state.editingTextElement.blur();
+      return;
+    }
     if (isInfoUiEvent(event)) {
       return;
     }
-    const target = event.target instanceof Element ? event.target : null;
+    const deepTarget = getDeepTargetFromPoint(event.clientX, event.clientY, isDeepPickEvent(event));
+    if (deepTarget && isOffBounds(deepTarget)) {
+      return;
+    }
+    const target = getElementForTarget(deepTarget) ?? (event.target instanceof Element ? event.target : null);
     if (!target) {
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
-    startInlineTextEdit(target);
+    requestAnimationFrame(() => {
+      if (!state.enabled) {
+        return;
+      }
+      startInlineTextEdit(target);
+    });
   };
 
   const handleKeydown = (event: KeyboardEvent) => {
@@ -374,7 +454,13 @@ export const createInfoController = () => {
       return;
     }
 
-    if (isInfoUiEvent(event)) {
+    const targetEl =
+      event.target instanceof Element ? event.target : event.target instanceof Node ? event.target.parentElement : null;
+    if (targetEl?.closest(".wilderness-inspect-restore__button")) {
+      return;
+    }
+    const isUiEvent = isInfoUiEvent(event);
+    if (isUiEvent) {
       return;
     }
     event.preventDefault();

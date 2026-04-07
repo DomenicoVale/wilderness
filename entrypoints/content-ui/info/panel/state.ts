@@ -1,4 +1,3 @@
-import $ from "jquery";
 import { INLINE_STYLE_PRIORITY } from "../core/options";
 import type { PendingInspectState } from "../core/types";
 import { buildSelectorForElement } from "../utils/common";
@@ -27,32 +26,34 @@ export const createInspectStateStore = ({ setDirtyState }: CreateInspectStateSto
   const modifiedBySelector = new Map<string, Map<string, string>>();
   const textBySelector = new Map<string, TextState>();
 
-  const getSelectorForTarget = (target: Element | null) => (target ? buildSelectorForElement(target) : null);
+  const escapeHtml = (value: string) =>
+    value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
 
-  const queryElementBySelector = (selector: string) => {
-    try {
-      return $(selector).get(0) ?? null;
-    } catch (error) {
-      if (selector.startsWith("#")) {
-        const byId = $(`#${selector.slice(1)}`).get(0);
-        if (byId) {
-          return byId;
-        }
-      }
-      console.warn("[Inspect] Invalid selector in persisted style state.", { selector, error });
-      return null;
+  const applyTextValue = (element: Element, value: string) => {
+    if (element instanceof HTMLElement && value.includes("\n")) {
+      element.innerHTML = escapeHtml(value).replaceAll("\n", "<br>");
+      return;
     }
+    element.textContent = value;
   };
+
+  const getSelectorForTarget = (target: Element | null) => (target ? buildSelectorForElement(target) : null);
 
   const applyStylesToElement = (element: Element, styles: Map<string, string> | null) => {
     if (!isStyleWritableElement(element) || !styles || styles.size === 0) {
       return;
     }
     styles.forEach((value, property) => {
-      if (!value.trim()) {
+      const next = value.trim();
+      if (!next) {
         element.style.removeProperty(property);
       } else {
-        element.style.setProperty(property, value, INLINE_STYLE_PRIORITY);
+        element.style.setProperty(property, next, INLINE_STYLE_PRIORITY);
       }
     });
   };
@@ -61,7 +62,7 @@ export const createInspectStateStore = ({ setDirtyState }: CreateInspectStateSto
     if (!textState) {
       return;
     }
-    element.textContent = textState.textContent;
+    applyTextValue(element, textState.textContent);
   };
 
   const clearStylesFromElement = (element: Element, styles: Map<string, string> | null) => {
@@ -73,37 +74,104 @@ export const createInspectStateStore = ({ setDirtyState }: CreateInspectStateSto
     });
   };
 
-  const applyModifiedStylesInDocument = () => {
-    modifiedBySelector.forEach((styles, selector) => {
-      const element = queryElementBySelector(selector);
-      if (!element) {
-        return;
+  const appendUnique = (target: Element[], candidates: Element[]) => {
+    candidates.forEach((candidate) => {
+      if (!target.includes(candidate)) {
+        target.push(candidate);
       }
-      applyStylesToElement(element, styles);
     });
-    textBySelector.forEach((textState, selector) => {
-      const element = queryElementBySelector(selector);
-      if (!element) {
-        return;
+  };
+
+  const queryElementsBySavedSelector = (selector: string) => {
+    const elements: Element[] = [];
+    try {
+      appendUnique(elements, Array.from(document.querySelectorAll(selector)));
+    } catch {
+      return elements;
+    }
+    if (elements.length > 0) {
+      return elements;
+    }
+
+    const simplifiedSegments = selector
+      .split(">")
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .map((segment) => {
+        if (segment.startsWith("#")) {
+          return segment;
+        }
+        const nth = segment.match(/:nth-of-type\(\d+\)$/)?.[0] ?? "";
+        const tag = segment.match(/^[a-zA-Z][\w-]*/)?.[0] ?? "";
+        if (!tag) {
+          return "";
+        }
+        return `${tag}${nth}`;
+      })
+      .filter(Boolean);
+
+    if (simplifiedSegments.length === 0) {
+      return elements;
+    }
+
+    const simplifiedSelector = simplifiedSegments.join(" > ");
+    if (simplifiedSelector !== selector) {
+      try {
+        appendUnique(elements, Array.from(document.querySelectorAll(simplifiedSelector)));
+      } catch {
+        // noop
       }
-      applyTextToElement(element, textState);
+    }
+    if (elements.length > 0) {
+      return elements;
+    }
+
+    const noNthSelector = simplifiedSegments.map((segment) => segment.replace(/:nth-of-type\(\d+\)$/g, "")).join(" > ");
+    if (noNthSelector && noNthSelector !== simplifiedSelector && noNthSelector !== selector) {
+      try {
+        appendUnique(elements, Array.from(document.querySelectorAll(noNthSelector)));
+      } catch {
+        // noop
+      }
+    }
+
+    if (elements.length > 0) {
+      return elements;
+    }
+
+    const idMatch = selector.match(/#[A-Za-z0-9_-]+/);
+    if (idMatch) {
+      try {
+        appendUnique(elements, Array.from(document.querySelectorAll(idMatch[0])));
+      } catch {
+        // noop
+      }
+    }
+    return elements;
+  };
+
+  const applyModifiedStylesInDocument = () => {
+    const selectors = new Set([...modifiedBySelector.keys(), ...textBySelector.keys()]);
+    selectors.forEach((selector) => {
+      const elements = queryElementsBySavedSelector(selector);
+      elements.forEach((element) => {
+        applyStylesToElement(element, modifiedBySelector.get(selector) ?? null);
+        applyTextToElement(element, textBySelector.get(selector) ?? null);
+      });
     });
   };
 
   const clearAllModifiedStylesInDocument = () => {
-    modifiedBySelector.forEach((styles, selector) => {
-      const element = queryElementBySelector(selector);
-      if (!element) {
-        return;
-      }
-      clearStylesFromElement(element, styles);
-    });
-    textBySelector.forEach((textState, selector) => {
-      const element = queryElementBySelector(selector);
-      if (!element) {
-        return;
-      }
-      element.textContent = textState.originalTextContent;
+    const selectors = new Set([...modifiedBySelector.keys(), ...textBySelector.keys()]);
+    selectors.forEach((selector) => {
+      const elements = queryElementsBySavedSelector(selector);
+      elements.forEach((element) => {
+        clearStylesFromElement(element, modifiedBySelector.get(selector) ?? null);
+        const textState = textBySelector.get(selector);
+        if (textState) {
+          applyTextValue(element, textState.originalTextContent);
+        }
+      });
     });
   };
 
@@ -125,7 +193,7 @@ export const createInspectStateStore = ({ setDirtyState }: CreateInspectStateSto
     modifiedBySelector.clear();
     textBySelector.clear();
     next.elements.forEach((entry) => {
-      if (!entry.selector || !entry.styles) {
+      if (!entry.selector || !entry.styles || typeof entry.styles !== "object") {
         return;
       }
       modifiedBySelector.set(entry.selector, new Map(Object.entries(entry.styles)));
@@ -157,8 +225,9 @@ export const createInspectStateStore = ({ setDirtyState }: CreateInspectStateSto
       return;
     }
     const existing = modifiedBySelector.get(selector) ?? new Map<string, string>();
-    if (value.trim()) {
-      existing.set(property, value.trim());
+    const next = value.trim();
+    if (next) {
+      existing.set(property, next);
       modifiedBySelector.set(selector, existing);
     } else {
       existing.delete(property);
@@ -197,9 +266,11 @@ export const createInspectStateStore = ({ setDirtyState }: CreateInspectStateSto
   };
 
   const applySavedElementStyles = (target: Element) => {
-    const selector = buildSelectorForElement(target);
-    const styles = modifiedBySelector.get(selector);
-    applyStylesToElement(target, styles ?? null);
+    const selector = getSelectorForTarget(target);
+    if (!selector) {
+      return;
+    }
+    applyStylesToElement(target, modifiedBySelector.get(selector) ?? null);
     applyTextToElement(target, textBySelector.get(selector) ?? null);
   };
 

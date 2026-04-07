@@ -7,6 +7,7 @@ const INFO_OUTLINE_SELECTOR = ".wilderness-info-outline";
 const INSPECT_PANEL_SELECTOR = ".wilderness-inspect-panel";
 const INSPECT_LEFT_SELECTOR = ".wilderness-inspect-left";
 const INSPECT_VARIABLE_POPOVER_SELECTOR = ".wilderness-inspect-var-popover";
+const FLEX_LIKE_DISPLAY_VALUES = ["flex", "inline-flex", "-webkit-box", "-webkit-inline-box"];
 
 const isToolbarElement = (el: Element) => {
   if ($(el).closest(TOOLBAR_HOST).length > 0) {
@@ -219,7 +220,7 @@ export const getStyles = (el: Element): StyleEntry[] => {
   }
 
   const display = computedStyle.display;
-  if (display.includes("flex")) {
+  if (FLEX_LIKE_DISPLAY_VALUES.some((value) => display.includes(value) || display === value)) {
     setEntry("display", display);
     setEntry("flexDirection", computedStyle.flexDirection);
     setEntry("flexWrap", computedStyle.flexWrap);

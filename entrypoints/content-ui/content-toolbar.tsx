@@ -9,6 +9,7 @@ import {
   INFO_CLEAR_STATE_EVENT,
   INFO_SAVE_STATE_EVENT,
   INFO_SETTINGS_EVENT,
+  INFO_STATE_FEEDBACK_EVENT,
   TOGGLE_CONSOLE_EVENT,
   TOGGLE_GUIDES_EVENT,
   TOGGLE_INFO_EVENT,
@@ -22,10 +23,19 @@ const ERROR_BUBBLE_TEXT_MAX_LENGTH = 100;
 const ERROR_BUBBLE_VISIBLE_MS = 1500;
 const ERROR_BUBBLE_POP_MS = 180;
 const ERROR_BUBBLE_VERTICAL_START = 8;
+const SAVE_BUBBLE_VISIBLE_MS = 1100;
+const SAVE_BUBBLE_POP_MS = 160;
+const SAVE_BUBBLE_VERTICAL_START = 8;
 
 type ErrorBubble = {
   id: string;
   message: string;
+};
+
+type SaveStateBubble = {
+  id: string;
+  message: string;
+  tone: "success" | "error";
 };
 
 const isErrorEntry = (entry: ConsoleEntry) => entry.method === "error" || entry.isUncaught || entry.isUnhandledRejection;
@@ -72,6 +82,35 @@ function ErrorBubbleToast({ bubble, onDismiss }: { bubble: ErrorBubble; onDismis
   );
 }
 
+function SaveStateBubbleToast({ bubble, onDismiss }: { bubble: SaveStateBubble; onDismiss: (id: string) => void }) {
+  const [leaving, setLeaving] = React.useState(false);
+
+  React.useEffect(() => {
+    const leaveTimeout = window.setTimeout(() => {
+      setLeaving(true);
+    }, SAVE_BUBBLE_VISIBLE_MS);
+    const removeTimeout = window.setTimeout(() => {
+      onDismiss(bubble.id);
+    }, SAVE_BUBBLE_VISIBLE_MS + SAVE_BUBBLE_POP_MS);
+
+    return () => {
+      window.clearTimeout(leaveTimeout);
+      window.clearTimeout(removeTimeout);
+    };
+  }, [bubble.id, onDismiss]);
+
+  return (
+    <div
+      className="wld-hud-state-bubble"
+      data-tone={bubble.tone}
+      data-state={leaving ? "leaving" : "visible"}
+      style={{ top: `calc(100% + ${SAVE_BUBBLE_VERTICAL_START}px)` }}
+    >
+      <span className="wld-hud-state-bubble-text">{bubble.message}</span>
+    </div>
+  );
+}
+
 const isEventWithinNode = (event: Event, node: Node | null) => {
   if (!node) {
     return false;
@@ -106,10 +145,13 @@ export function ContentToolbar() {
   const [toolsMenuOpen, setToolsMenuOpen] = React.useState(false);
   const [animKey, setAnimKey] = React.useState(0);
   const [errorBubbles, setErrorBubbles] = React.useState<ErrorBubble[]>([]);
+  const [saveStateBubbles, setSaveStateBubbles] = React.useState<SaveStateBubble[]>([]);
+  const [saveStateAckTone, setSaveStateAckTone] = React.useState<"success" | "error" | null>(null);
   const toolsMenuRef = React.useRef<HTMLDivElement | null>(null);
   const toolsTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const bubbleIdRef = React.useRef(0);
   const consoleEntryCountRef = React.useRef(consoleEntries.length);
+  const saveAckTimeoutRef = React.useRef<number | null>(null);
 
   const handleConsoleClose = () => setToolState({ consolePanelOpen: false });
 
@@ -236,6 +278,55 @@ export function ContentToolbar() {
     setErrorBubbles((current) => current.filter((bubble) => bubble.id !== id));
   }, []);
 
+  const dismissSaveStateBubble = React.useCallback((id: string) => {
+    setSaveStateBubbles((current) => current.filter((bubble) => bubble.id !== id));
+  }, []);
+
+  React.useEffect(() => {
+    const handleInfoStateFeedback = (event: Event) => {
+      if (!(event instanceof CustomEvent)) {
+        return;
+      }
+      const detail = event.detail as { source?: string; message?: string; tone?: "success" | "error" } | null;
+      if (!detail || detail.source !== "save") {
+        return;
+      }
+      const tone = detail.tone === "error" ? "error" : "success";
+      const message =
+        typeof detail.message === "string" && detail.message.trim()
+          ? detail.message.trim()
+          : tone === "success"
+            ? "State saved"
+            : "Save failed";
+
+      setSaveStateAckTone(tone);
+      if (saveAckTimeoutRef.current !== null) {
+        window.clearTimeout(saveAckTimeoutRef.current);
+      }
+      saveAckTimeoutRef.current = window.setTimeout(() => {
+        setSaveStateAckTone(null);
+        saveAckTimeoutRef.current = null;
+      }, 800);
+
+      setSaveStateBubbles([
+        {
+          id: `save-bubble-${bubbleIdRef.current++}`,
+          message,
+          tone,
+        },
+      ]);
+    };
+
+    window.addEventListener(INFO_STATE_FEEDBACK_EVENT, handleInfoStateFeedback as EventListener);
+    return () => {
+      window.removeEventListener(INFO_STATE_FEEDBACK_EVENT, handleInfoStateFeedback as EventListener);
+      if (saveAckTimeoutRef.current !== null) {
+        window.clearTimeout(saveAckTimeoutRef.current);
+        saveAckTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const delays = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390];
   const items: React.ReactNode[] = [];
   let idx = 0;
@@ -349,7 +440,24 @@ export function ContentToolbar() {
       )
     );
     items.push(sep());
-    items.push(btn("[SAVE STATE]", false, saveInfoState, "save-info-state", "Save inspect edits and panel layout"));
+    const saveButtonDelay = `${delays[idx++] ?? 390}ms`;
+    items.push(
+      <div key="save-state-wrap" className="wld-hud-save-wrap">
+        <button
+          type="button"
+          className={`wld-hud-btn${saveStateAckTone ? " active" : ""}`}
+          style={{ animationDelay: saveButtonDelay }}
+          onClick={saveInfoState}
+          title="Save inspect edits and panel layout"
+          data-tone={saveStateAckTone ?? undefined}
+        >
+          {shortcutLabel(`[SAVE STATE${saveStateAckTone === "success" ? ":OK" : saveStateAckTone === "error" ? ":ERR" : ""}]`)}
+        </button>
+        {saveStateBubbles.map((bubble) => (
+          <SaveStateBubbleToast key={bubble.id} bubble={bubble} onDismiss={dismissSaveStateBubble} />
+        ))}
+      </div>
+    );
     items.push(sep());
     items.push(btn("[CLEAR STATE]", false, clearInfoState, "clear-info-state", "Clear saved inspect edits and layout"));
   }

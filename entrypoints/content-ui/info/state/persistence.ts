@@ -14,7 +14,7 @@ export const DEFAULT_PANEL_HEIGHT_RATIO = 0.6;
 const INSPECT_LAYOUT_STORAGE_KEY = "wilderness:inspect-layout";
 const INSPECT_LAYOUT_VERSION = 2;
 const INSPECT_STATE_STORAGE_KEY = "wilderness:inspect-state";
-export const INSPECT_STATE_VERSION = 2;
+export const INSPECT_STATE_VERSION = 6;
 
 let panelLayoutCache: PanelLayoutRecord = {};
 let panelLayoutHydrated = false;

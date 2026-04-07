@@ -6,6 +6,7 @@ import {
   INFO_CLEAR_STATE_EVENT,
   INFO_SAVE_STATE_EVENT,
   INFO_SETTINGS_EVENT,
+  INFO_STATE_FEEDBACK_EVENT,
   TOGGLE_CONSOLE_EVENT,
   TOGGLE_GUIDES_EVENT,
   TOGGLE_INFO_EVENT,
@@ -124,13 +125,23 @@ export const createContentEventHandlers = ({
     controller.updateSettings(detail as Partial<InfoSettings>);
   },
 
-  [INFO_SAVE_STATE_EVENT]: () => {
+  [INFO_SAVE_STATE_EVENT]: async () => {
     const controller = getInfoController();
     if (!controller) {
+      window.dispatchEvent(
+        new CustomEvent(INFO_STATE_FEEDBACK_EVENT, {
+          detail: { source: "save", message: "Inspect unavailable", tone: "error" },
+        })
+      );
       return;
     }
 
-    void controller.saveState();
+    const feedback = await controller.saveState();
+    window.dispatchEvent(
+      new CustomEvent(INFO_STATE_FEEDBACK_EVENT, {
+        detail: { source: "save", ...feedback },
+      })
+    );
   },
 
   [INFO_CLEAR_STATE_EVENT]: () => {

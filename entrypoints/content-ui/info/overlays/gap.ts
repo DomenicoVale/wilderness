@@ -57,6 +57,8 @@ function getMargin(style: CSSStyleDeclaration, side: string): number {
 
 const GAP_FILL = "rgba(33,150,243,0.18)";
 const GAP_STROKE = "rgba(33,150,243,0.6)";
+const FLEX_LIKE_DISPLAY_VALUES = new Set(["flex", "inline-flex", "-webkit-box", "-webkit-inline-box"]);
+const GRID_DISPLAY_VALUES = new Set(["grid", "inline-grid"]);
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
@@ -76,8 +78,8 @@ export function renderGaps(
   showActualDistances: boolean
 ): void {
   const display = containerStyle.display;
-  const isFlex = display === "flex" || display === "inline-flex";
-  const isGrid = display === "grid" || display === "inline-grid";
+  const isFlex = FLEX_LIKE_DISPLAY_VALUES.has(display);
+  const isGrid = GRID_DISPLAY_VALUES.has(display);
   if (!isFlex && !isGrid) return;
 
   const children = Array.from(element.children).filter((child) => {

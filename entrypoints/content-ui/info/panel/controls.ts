@@ -162,7 +162,7 @@ export const createPanelControls = ({
       return normalized;
     };
 
-    const bumpNumberValue = (direction: 1 | -1, precision: "normal" | "fine" | "coarse") => {
+    const bumpNumberValue = (direction: 1 | -1, precision: "normal" | "fine" | "coarse", options?: ApplyStyleOptions) => {
       const source = input.value.trim() || initialValue;
       const fallbackUnit = inferNumericUnit(property, inferredUnit);
       const parsed = parseNumericUnit(source) ?? { numeric: 0, unit: fallbackUnit };
@@ -179,7 +179,7 @@ export const createPanelControls = ({
       const nextNumeric = parsed.numeric + delta;
       const next = inferredUnit === "" ? formatNumericValue(nextNumeric) : `${formatNumericValue(nextNumeric)}${inferredUnit}`;
       input.value = next;
-      input.value = applyNumberValue(next);
+      input.value = applyNumberValue(next, options);
     };
 
     input.addEventListener("input", () => {
@@ -201,7 +201,7 @@ export const createPanelControls = ({
       event.preventDefault();
       const direction = event.key === "ArrowUp" ? 1 : -1;
       const precision = event.ctrlKey || event.metaKey || event.altKey ? "fine" : event.shiftKey ? "coarse" : "normal";
-      bumpNumberValue(direction, precision);
+      bumpNumberValue(direction, precision, { rerender: false });
     });
 
     if (!enableDrag) {

@@ -215,13 +215,12 @@ export const createInfoPanel = ({ getSelected, applyStyle }: CreateInfoPanelOpti
       setCopyFeedback(false);
       onPreviewHover?.(null);
       panelMount.api.setSelectorText("[NO SELECTION]");
-      panelMount.api.setShowRestore(true);
+      panelMount.api.setShowRestore(isDirty);
       setStatusFeedback("", "success");
       setDirtyState(isDirty);
       return;
     }
 
-    stateStore.applySavedElementStyles(target);
     currentTreeTarget = target;
     onPreviewHover?.(null);
     panelMount.api.setShowRestore(false);
